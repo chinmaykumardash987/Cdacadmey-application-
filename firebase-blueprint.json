@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Student or Admin user profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "maxLength": 120 },
+        "phone": { "type": "string", "maxLength": 20 },
+        "role": { "type": "string", "enum": ["student", "admin"] },
+        "classLevel": { "type": "string", "enum": ["Class 11", "Class 12", "All"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "fullName", "email", "role", "status", "createdAt"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Study note or chapter PDF document uploaded by admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "classLevel": { "type": "string", "enum": ["Class 11", "Class 12"] },
+        "subject": { "type": "string", "maxLength": 50 },
+        "chapter": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "fileUrl": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileSize": { "type": "string" },
+        "pageCount": { "type": "number" },
+        "uploaderId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "classLevel", "subject", "chapter", "fileUrl", "uploaderId", "createdAt"]
+    },
+    "Lecture": {
+      "title": "Lecture",
+      "description": "Video lecture with YouTube or video streaming URL",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "classLevel": { "type": "string", "enum": ["Class 11", "Class 12"] },
+        "subject": { "type": "string", "maxLength": 50 },
+        "chapter": { "type": "string", "maxLength": 100 },
+        "lectureNumber": { "type": "string", "maxLength": 20 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "videoUrl": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "duration": { "type": "string" },
+        "uploaderId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "classLevel", "subject", "chapter", "videoUrl", "uploaderId", "createdAt"]
+    },
+    "DPP": {
+      "title": "DPP",
+      "description": "Daily Practice Problem sheet with questions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "classLevel": { "type": "string", "enum": ["Class 11", "Class 12"] },
+        "subject": { "type": "string", "maxLength": 50 },
+        "chapter": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "fileUrl": { "type": "string" },
+        "questionsCount": { "type": "number" },
+        "uploaderId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "classLevel", "subject", "chapter", "uploaderId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Registered students and administrator user accounts"
+    },
+    "/notes/{noteId}": {
+      "schema": "Note",
+      "description": "Class 11 and Class 12 notes collection"
+    },
+    "/lectures/{lectureId}": {
+      "schema": "Lecture",
+      "description": "Video lectures collection"
+    },
+    "/dpps/{dppId}": {
+      "schema": "DPP",
+      "description": "Daily practice problems collection"
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Admin authorization mapping documents"
+    }
+  }
+}

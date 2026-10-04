@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <rect width="500" height="500" rx="36" fill="#000000" />
+  
+  <g id="rays" stroke="#64748b" stroke-width="1.8" opacity="0.6">
+    <line x1="250" y1="210" x2="250" y2="40" />
+    <line x1="250" y1="210" x2="210" y2="46" />
+    <line x1="250" y1="210" x2="290" y2="46" />
+    <line x1="250" y1="210" x2="175" y2="65" />
+    <line x1="250" y1="210" x2="325" y2="65" />
+    <line x1="250" y1="210" x2="145" y2="92" />
+    <line x1="250" y1="210" x2="355" y2="92" />
+    <line x1="250" y1="210" x2="120" y2="128" />
+    <line x1="250" y1="210" x2="380" y2="128" />
+    <line x1="250" y1="210" x2="105" y2="168" />
+    <line x1="250" y1="210" x2="395" y2="168" />
+  </g>
+
+  <!-- Green Book Leaves / Wings -->
+  <g id="green-wings">
+    <path d="M250,335 C230,300 170,250 110,240 C110,270 140,295 245,345 Z" fill="#22c55e" stroke="#ffffff" stroke-width="1.5" />
+    <path d="M250,345 C220,320 160,285 115,285 C120,315 155,340 248,360 Z" fill="#16a34a" stroke="#ffffff" stroke-width="1.5" />
+    <path d="M250,358 C225,345 180,330 145,335 C155,360 190,380 250,380 Z" fill="#15803d" stroke="#ffffff" stroke-width="1.5" />
+    
+    <path d="M250,335 C270,300 330,250 390,240 C390,270 360,295 255,345 Z" fill="#22c55e" stroke="#ffffff" stroke-width="1.5" />
+    <path d="M250,345 C280,320 340,285 385,285 C380,315 345,340 252,360 Z" fill="#16a34a" stroke="#ffffff" stroke-width="1.5" />
+    <path d="M250,358 C275,345 320,330 355,335 C345,360 310,380 250,380 Z" fill="#15803d" stroke="#ffffff" stroke-width="1.5" />
+
+    <path d="M250,340 L238,375 L250,368 L262,375 Z" fill="#ffffff" opacity="0.9" />
+  </g>
+
+  <!-- 3D Mortarboard Cap -->
+  <g id="graduation-cap">
+    <polygon points="180,185 250,230 250,290 180,240" fill="#b91c1c" />
+    <polygon points="320,185 250,230 250,290 320,240" fill="#dc2626" />
+    
+    <polygon points="250,110 375,165 250,210 125,165" fill="#e11d48" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" />
+    <polygon points="250,118 360,165 250,202 140,165" fill="#ef4444" />
+    
+    <circle cx="250" cy="165" r="9" fill="#ffffff" />
+    <circle cx="250" cy="165" r="5" fill="#fecaca" />
+    
+    <path d="M250,165 Q310,170 330,205" fill="none" stroke="#f87171" stroke-width="3" stroke-linecap="round" />
+    <ellipse cx="332" cy="225" rx="6" ry="14" fill="#dc2626" stroke="#ffffff" stroke-width="1" />
+  </g>
+
+  <!-- CD ACADEMY Text -->
+  <text x="250" y="440" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-weight="900" font-size="44" text-anchor="middle" fill="#ffffff" letter-spacing="3" stroke="#000000" stroke-width="1.5">CD ACADEMY</text>
+  <text x="250" y="475" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-weight="700" font-size="16" text-anchor="middle" fill="#ef4444" letter-spacing="4">HAR BACHHA PADHEGA</text>
+</svg>

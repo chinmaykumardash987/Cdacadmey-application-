@@ -1,0 +1,6 @@
+{
+  "name": "CD ACADEMY - Har Bachha Padhega",
+  "description": "Modern, clean and student-focused educational platform for Class 11 and Class 12 students featuring notes, video lectures, DPPs, and comprehensive study materials.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
