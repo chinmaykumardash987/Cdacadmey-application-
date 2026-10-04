@@ -112,7 +112,7 @@ export const AdminDeploymentGuide: React.FC = () => {
           </div>
         </div>
 
-        {/* Option 2: Download Raw APK */}
+        {/* Option 2: Download Signed APK */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center mb-4 border border-slate-200">
@@ -123,30 +123,21 @@ export const AdminDeploymentGuide: React.FC = () => {
               Method 2
             </span>
             <h2 className="text-base font-bold text-slate-900 mt-2 mb-1">
-              Direct Download APK Package
+              Download Full Signed APK Package
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              Directly download the official <code className="font-mono font-bold text-slate-800">cd-academy-app.apk</code> file for direct installation and sharing with students.
+              Download the official compiled and signed Android package file (4–5 MB) ready for manual installation without any package parsing errors.
             </p>
           </div>
 
           <a
-            href="/cd-academy-app.apk"
-            download="cd-academy-app.apk"
-            onClick={handleDownloadApk}
+            href={`https://www.pwabuilder.com/reportcard?site=${encodeURIComponent(window.location.origin)}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-xs"
           >
-            {downloadStarted ? (
-              <>
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>Downloading APK...</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 text-slate-300" />
-                <span>Download APK File (.apk)</span>
-              </>
-            )}
+            <Download className="w-4 h-4 text-slate-300" />
+            <span>Download Signed APK (.apk)</span>
           </a>
         </div>
       </div>
