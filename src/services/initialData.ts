@@ -55,8 +55,8 @@ export const INITIAL_STUDENTS: User[] = [
 
 export const INITIAL_ADMIN: User = {
   id: 'admin-1',
-  fullName: 'CD ACADEMY Admin',
-  email: 'admin@cdacademy.com',
+  fullName: 'CD ACADEMY Administrator',
+  email: 'cdacademy992@gmail.com',
   phone: '+91 98999 88877',
   role: 'admin',
   classLevel: 'All',

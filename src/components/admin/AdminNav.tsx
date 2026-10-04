@@ -12,7 +12,8 @@ import {
   BookMarked,
   LogOut,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Smartphone
 } from 'lucide-react';
 
 interface AdminNavProps {
@@ -34,7 +35,7 @@ export const AdminNav: React.FC<AdminNavProps> = ({
     { id: 'notes', label: 'Notes', icon: BookOpen },
     { id: 'lectures', label: 'Lectures', icon: Video },
     { id: 'dpp', label: 'DPP', icon: FileCheck },
-    { id: 'guide', label: 'Setup & Deploy', icon: BookMarked },
+    { id: 'guide', label: 'Download App (APK)', icon: Smartphone },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

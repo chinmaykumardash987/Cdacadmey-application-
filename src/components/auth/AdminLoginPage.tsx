@@ -9,8 +9,8 @@ interface AdminLoginPageProps {
 
 export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToStudentPortal }) => {
   const { loginAdmin, quickLoginAs } = useAuth();
-  const [email, setEmail] = useState('admin@cdacademy.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('cdacademy992@gmail.com');
+  const [password, setPassword] = useState('chinmay@2006');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +77,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToStudentP
             </button>
           </div>
           <div className="mt-1 text-[11px] font-mono text-slate-400">
-            Email: <span className="text-white">admin@cdacademy.com</span> • Password: <span className="text-white">admin123</span>
+            GMail: <span className="text-white">cdacademy992@gmail.com</span> • Password: <span className="text-white">chinmay@2006</span>
           </div>
         </div>
 

@@ -31,8 +31,10 @@ import {
   Youtube,
   ChevronRight,
   TrendingUp,
-  Bookmark
+  Bookmark,
+  Smartphone
 } from 'lucide-react';
+import { ApkDownloadModal } from '../common/ApkDownloadModal';
 
 interface StudentDashboardProps {
   onNavigateTab: (tab: ActiveTab) => void;
@@ -48,6 +50,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const { user, selectedClass, setSelectedClass } = useAuth();
   const [viewMode, setViewMode] = useState<'icon' | 'card'>('icon');
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [showApkModal, setShowApkModal] = useState(false);
 
   const allNotes = StorageService.getNotes();
   const allLectures = StorageService.getLectures();
@@ -149,6 +152,17 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       bgColor: 'bg-teal-50 text-teal-600 border-teal-100',
       badge: 'Step-by-Step',
       badgeColor: 'bg-teal-600 text-white'
+    },
+    {
+      id: 'dashboard' as ActiveTab,
+      label: 'Android APK',
+      sublabel: 'Install Native App',
+      icon: Smartphone,
+      iconColor: 'text-emerald-600',
+      bgColor: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+      badge: 'APK App',
+      badgeColor: 'bg-emerald-600 text-white',
+      onClick: () => setShowApkModal(true)
     }
   ];
 
@@ -373,7 +387,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <button
                   key={item.label}
                   type="button"
-                  onClick={() => onNavigateTab(item.id)}
+                  onClick={() => item.onClick ? item.onClick() : onNavigateTab(item.id)}
                   className="group relative flex flex-col items-center text-center p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-red-300 transition-all duration-200 cursor-pointer active:scale-95"
                 >
                   {/* Badge */}
@@ -627,6 +641,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Android APK Download & Installation Modal */}
+      <ApkDownloadModal
+        isOpen={showApkModal}
+        onClose={() => setShowApkModal(false)}
+      />
     </div>
   );
 };

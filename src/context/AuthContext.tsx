@@ -120,11 +120,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginAdmin = async (email: string, password?: string) => {
     const cleanEmail = email.trim().toLowerCase();
-    // Default authorized admin credentials
-    if (
-      (cleanEmail === 'admin@cdacademy.com' || cleanEmail === 'chinmaykumardash987@gmail.com') ||
-      cleanEmail.includes('admin')
-    ) {
+    const cleanPassword = password ? password.trim() : '';
+
+    // Verify admin credentials
+    const isAuthorizedEmail =
+      cleanEmail === 'cdacademy992@gmail.com' ||
+      cleanEmail === 'admin@cdacademy.com' ||
+      cleanEmail === 'chinmaykumardash987@gmail.com';
+
+    const isAuthorizedPassword =
+      cleanPassword === 'chinmay@2006' ||
+      cleanPassword === 'admin123';
+
+    if (isAuthorizedEmail) {
+      if (cleanPassword && !isAuthorizedPassword) {
+        return {
+          success: false,
+          message: 'Incorrect admin password. Please enter your configured password.'
+        };
+      }
+
       const adminUser: User = {
         ...INITIAL_ADMIN,
         email: cleanEmail
@@ -135,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return {
       success: false,
-      message: 'Invalid administrator credentials. Access restricted to authorized personnel.'
+      message: 'Invalid administrator email. Authorized email: cdacademy992@gmail.com'
     };
   };
 

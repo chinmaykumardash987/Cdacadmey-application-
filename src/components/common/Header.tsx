@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { CdAcademyLogo } from './CdAcademyLogo';
-import { LogOut, User as UserIcon, Shield, Bell, Check, ChevronDown, Sparkles } from 'lucide-react';
+import { LogOut, User as UserIcon, Shield, Bell, Check, ChevronDown, Sparkles, Smartphone, Download } from 'lucide-react';
 import { ClassLevel, ActiveTab } from '../../types';
+import { ApkDownloadModal } from './ApkDownloadModal';
 
 interface HeaderProps {
   activeTab?: ActiveTab;
@@ -18,6 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { user, selectedClass, setSelectedClass, logout, isAdmin } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showClassDropdown, setShowClassDropdown] = useState(false);
+  const [showApkModal, setShowApkModal] = useState(false);
 
   const notifications = [
     { id: 1, title: 'New DPP uploaded for Physics Chapter 3', time: '10 min ago' },
@@ -84,6 +86,17 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Action Icons & Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Install APK Button */}
+          <button
+            onClick={() => setShowApkModal(true)}
+            className="flex items-center gap-1.5 bg-slate-900 hover:bg-red-600 text-white text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl shadow-xs transition"
+            title="Download & Install Android APK"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-red-400" />
+            <span className="hidden sm:inline">Install APK</span>
+            <span className="sm:hidden text-[11px]">APK</span>
+          </button>
+
           {/* Admin shortcut if admin */}
           {isAdmin && (
             <button
@@ -163,6 +176,12 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Android APK Download & Installation Modal */}
+      <ApkDownloadModal
+        isOpen={showApkModal}
+        onClose={() => setShowApkModal(false)}
+      />
     </header>
   );
 };
