@@ -139,10 +139,12 @@ export const Header: React.FC<HeaderProps> = ({
           {isAdmin && (
             <button
               onClick={onOpenAdmin}
-              className="hidden sm:inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-xs transition"
+              className="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-lg shadow-xs transition"
+              title="Open Admin Panel"
             >
               <Shield className="w-3.5 h-3.5" />
-              <span>Admin Panel</span>
+              <span className="hidden sm:inline">Admin Panel</span>
+              <span className="sm:hidden text-[11px]">Admin</span>
             </button>
           )}
 

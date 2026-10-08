@@ -24,6 +24,13 @@ function MainAppContent() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [adminViewActive, setAdminViewActive] = useState(false);
 
+  // Automatically open Admin Panel when admin signs in
+  React.useEffect(() => {
+    if (isAdmin) {
+      setAdminViewActive(true);
+    }
+  }, [isAdmin]);
+
   // Active Modals
   const [activePdfNote, setActivePdfNote] = useState<Note | null>(null);
   const [activeVideoLecture, setActiveVideoLecture] = useState<Lecture | null>(null);
