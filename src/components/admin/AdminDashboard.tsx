@@ -1,7 +1,7 @@
 import React from 'react';
 import { StorageService } from '../../services/storage';
 import { AdminTab } from '../../types';
-import { Users, BookOpen, Video, FileCheck, Plus, ArrowUpRight, GraduationCap, CheckCircle, Clock } from 'lucide-react';
+import { Users, BookOpen, Video, FileCheck, Plus, ArrowUpRight, GraduationCap, CheckCircle, Clock, Layers, Bell, Smartphone } from 'lucide-react';
 
 interface AdminDashboardProps {
   onNavigateTab: (tab: AdminTab) => void;
@@ -12,6 +12,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   const notes = StorageService.getNotes();
   const lectures = StorageService.getLectures();
   const dpps = StorageService.getDPPs();
+  const batches = StorageService.getBatches();
+  const notifs = StorageService.getNotifications();
 
   const class11Students = students.filter(s => s.classLevel === 'Class 11').length;
   const class12Students = students.filter(s => s.classLevel === 'Class 12').length;
@@ -25,18 +27,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       actionTab: 'students' as AdminTab
     },
     {
-      title: 'Class 11 Students',
-      value: class11Students,
-      icon: GraduationCap,
-      color: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-      actionTab: 'students' as AdminTab
-    },
-    {
-      title: 'Class 12 Students',
-      value: class12Students,
-      icon: GraduationCap,
-      color: 'bg-indigo-50 text-indigo-600 border-indigo-200',
-      actionTab: 'students' as AdminTab
+      title: 'Active Batches',
+      value: batches.length,
+      icon: Layers,
+      color: 'bg-orange-50 text-orange-600 border-orange-200',
+      actionTab: 'batches' as AdminTab
     },
     {
       title: 'Total Notes',
@@ -58,6 +53,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       icon: FileCheck,
       color: 'bg-amber-50 text-amber-600 border-amber-200',
       actionTab: 'dpp' as AdminTab
+    },
+    {
+      title: 'Push Alerts Sent',
+      value: notifs.length,
+      icon: Bell,
+      color: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+      actionTab: 'notifications' as AdminTab
     }
   ];
 
@@ -232,19 +234,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             <div className="mt-6 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-slate-800">
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Zero-Latency Local Persistence Active</span>
+                <span>Cloud & Offline Persistence Active</span>
               </div>
               <p className="text-[11px] text-slate-500">
-                All changes, uploads, and edits made in the admin panel are saved automatically in browser storage and sync with Firebase!
+                All lectures, notes, DPPs, and student test results are securely synced and instantly available.
               </p>
             </div>
           </div>
 
           <button
             onClick={() => onNavigateTab('guide')}
-            className="mt-4 w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition text-center"
+            className="mt-4 w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition text-center shadow-xs flex items-center justify-center gap-2"
           >
-            Open Firebase & Deployment Guide
+            <Smartphone className="w-4 h-4" />
+            <span>Open Android App (APK) Center</span>
           </button>
         </div>
       </div>

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { CdAcademyLogo } from './CdAcademyLogo';
-import { LogOut, User as UserIcon, Shield, Bell, Check, ChevronDown, Sparkles, Smartphone, Download } from 'lucide-react';
-import { ClassLevel, ActiveTab } from '../../types';
+import { LogOut, User as UserIcon, Shield, Bell, Check, ChevronDown, Sparkles, Smartphone, Download, CheckCheck } from 'lucide-react';
+import { ClassLevel, ActiveTab, NotificationItem } from '../../types';
 import { ApkDownloadModal } from './ApkDownloadModal';
+import { StorageService } from '../../services/storage';
 
 interface HeaderProps {
   activeTab?: ActiveTab;
@@ -16,16 +17,53 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateTab,
   onOpenAdmin
 }) => {
-  const { user, selectedClass, setSelectedClass, logout, isAdmin } = useAuth();
+  const { user, selectedClass, setSelectedClass, logout, isAdmin, requestNotificationPermission } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showClassDropdown, setShowClassDropdown] = useState(false);
   const [showApkModal, setShowApkModal] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => StorageService.getNotifications());
+  const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
 
-  const notifications = [
-    { id: 1, title: 'New DPP uploaded for Physics Chapter 3', time: '10 min ago' },
-    { id: 2, title: 'Class 12 Chemistry Organic notes published', time: '2 hours ago' },
-    { id: 3, title: 'Welcome to CD ACADEMY! - Har Bachha Padhega', time: 'Yesterday' }
-  ];
+  useEffect(() => {
+    setNotifications(StorageService.getNotifications());
+  }, [showNotifications]);
+
+  // Relevant notifications for current user
+  const relevantNotifications = notifications.filter(n => {
+    if (!n.isActive) return false;
+    if (isAdmin) return true;
+    if (n.targetType === 'all') return true;
+    if (n.targetType === 'class' && n.targetClass === selectedClass) return true;
+    if (n.targetType === 'student' && n.targetStudentId === user?.id) return true;
+    return true;
+  });
+
+  const unreadCount = relevantNotifications.filter(
+    n => user?.id && !(n.readBy || []).includes(user.id)
+  ).length;
+
+  const handleMarkAllRead = () => {
+    if (user?.id) {
+      StorageService.markAllNotificationsAsRead(user.id);
+      setNotifications(StorageService.getNotifications());
+    }
+  };
+
+  const handleNotificationClick = (notif: NotificationItem) => {
+    if (user?.id) {
+      StorageService.markNotificationAsRead(notif.notificationId, user.id);
+      setNotifications(StorageService.getNotifications());
+    }
+    if (notif.actionTab && onNavigateTab) {
+      onNavigateTab(notif.actionTab);
+      setShowNotifications(false);
+    }
+  };
+
+  const handleEnablePush = async () => {
+    await requestNotificationPermission();
+    setShowPermissionPrompt(false);
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all">
@@ -108,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Notifications */}
+          {/* Notifications Bell */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
@@ -116,7 +154,11 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label="Notifications"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full ring-2 ring-white"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-red-600 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
 
             {showNotifications && (
@@ -125,20 +167,77 @@ export const Header: React.FC<HeaderProps> = ({
                   className="fixed inset-0 z-10"
                   onClick={() => setShowNotifications(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-20 animate-in fade-in">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span className="font-bold text-xs text-slate-900">Notifications</span>
-                    <span className="text-[10px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded">
-                      3 New
-                    </span>
+                <div className="absolute right-0 top-full mt-2 w-88 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-20 animate-in fade-in max-w-[92vw]">
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-extrabold text-xs text-slate-900">Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="text-[10px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded-full">
+                          {unreadCount} Unread
+                        </span>
+                      )}
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-[10px] font-bold text-red-600 hover:text-red-800 flex items-center gap-1 transition"
+                      >
+                        <CheckCheck className="w-3 h-3" />
+                        <span>Mark all read</span>
+                      </button>
+                    )}
                   </div>
-                  <div className="divide-y divide-slate-100 mt-1 max-h-64 overflow-y-auto">
-                    {notifications.map(n => (
-                      <div key={n.id} className="py-2 px-1 text-xs hover:bg-slate-50 rounded-lg transition">
-                        <p className="font-medium text-slate-800">{n.title}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{n.time}</p>
+
+                  {/* Push Permission Prompt if not granted */}
+                  {user?.notificationPermission !== 'granted' && (
+                    <div className="mt-2.5 p-2.5 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl text-xs flex items-center justify-between gap-2">
+                      <div className="text-[11px] text-slate-700">
+                        <span className="font-bold text-red-700 block">Enable Live Alerts 🔔</span>
+                        <span>Receive lecture, DPP & test updates</span>
                       </div>
-                    ))}
+                      <button
+                        onClick={handleEnablePush}
+                        className="shrink-0 bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg transition shadow-2xs"
+                      >
+                        Enable
+                      </button>
+                    </div>
+                  )}
+
+                  {/* List */}
+                  <div className="divide-y divide-slate-100 mt-2 max-h-72 overflow-y-auto">
+                    {relevantNotifications.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-slate-400">
+                        No notifications yet
+                      </div>
+                    ) : (
+                      relevantNotifications.map(n => {
+                        const isRead = user?.id && (n.readBy || []).includes(user.id);
+                        return (
+                          <div
+                            key={n.notificationId}
+                            onClick={() => handleNotificationClick(n)}
+                            className={`py-2.5 px-2 text-xs rounded-xl transition cursor-pointer ${
+                              isRead ? 'hover:bg-slate-50 opacity-80' : 'bg-red-50/40 hover:bg-red-50/70 font-semibold'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-1">
+                              <p className="font-bold text-slate-900 leading-snug">{n.title}</p>
+                              {!isRead && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-600 shrink-0 mt-1" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">
+                              {n.message}
+                            </p>
+                            <div className="flex items-center justify-between mt-1 text-[10px] text-slate-400">
+                              <span>{new Date(n.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                              {n.actionTab && <span className="text-red-600 font-bold">Open →</span>}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </>

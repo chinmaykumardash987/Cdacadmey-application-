@@ -15,6 +15,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onGoToLogin }) => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [classLevel, setClassLevel] = useState<ClassLevel>('Class 11');
+  const [board, setBoard] = useState('CBSE Board');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,6 +46,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onGoToLogin }) => {
       email,
       phone,
       classLevel,
+      board,
       password
     });
 
@@ -150,27 +152,38 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onGoToLogin }) => {
               </div>
             </div>
 
-            {/* Class Selection */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Select Class *
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {(['Class 11', 'Class 12'] as ClassLevel[]).map(cls => (
-                  <button
-                    key={cls}
-                    type="button"
-                    onClick={() => setClassLevel(cls)}
-                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition ${
-                      classLevel === cls
-                        ? 'border-red-600 bg-red-50 text-red-700 ring-2 ring-red-500/20 shadow-xs'
-                        : 'border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>{cls}</span>
-                    {classLevel === cls && <Check className="w-3.5 h-3.5 text-red-600" />}
-                  </button>
-                ))}
+            {/* Class & Board Selection */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Class *
+                </label>
+                <select
+                  value={classLevel}
+                  onChange={e => setClassLevel(e.target.value as ClassLevel)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white"
+                >
+                  <option value="Class 11">Class 11</option>
+                  <option value="Class 12">Class 12</option>
+                  <option value="Class 10">Class 10</option>
+                  <option value="Class 9">Class 9</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Board *
+                </label>
+                <select
+                  value={board}
+                  onChange={e => setBoard(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white"
+                >
+                  <option value="CBSE Board">CBSE Board</option>
+                  <option value="CHSE Odisha">CHSE Odisha</option>
+                  <option value="State Board">State Board</option>
+                  <option value="ICSE / ISC">ICSE / ISC</option>
+                </select>
               </div>
             </div>
 

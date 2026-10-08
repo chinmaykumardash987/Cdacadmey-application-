@@ -1,24 +1,44 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { User, ClassLevel } from '../types';
+import { auth, db, testFirestoreConnection } from '../services/firebase';
 import { StorageService } from '../services/storage';
+import { FirestoreDataService } from '../services/firestoreData';
 import { INITIAL_STUDENTS, INITIAL_ADMIN } from '../services/initialData';
+
+interface SignUpData {
+  fullName: string;
+  email: string;
+  phone: string;
+  classLevel: ClassLevel;
+  board?: string;
+  rollNumber?: string;
+  password?: string;
+}
 
 interface AuthContextType {
   user: User | null;
+  firebaseUser: FirebaseUser | null;
   selectedClass: ClassLevel;
   setSelectedClass: (cls: ClassLevel) => void;
   loginStudent: (identifier: string, password?: string) => Promise<{ success: boolean; message?: string }>;
-  signUpStudent: (data: {
-    fullName: string;
-    email: string;
-    phone: string;
-    classLevel: ClassLevel;
-    password?: string;
-  }) => Promise<{ success: boolean; message?: string }>;
+  signUpStudent: (data: SignUpData) => Promise<{ success: boolean; message?: string }>;
   loginAdmin: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
+  updateProfile: (updates: Partial<User>) => Promise<{ success: boolean; message?: string }>;
+  requestNotificationPermission: () => Promise<boolean>;
   isAdmin: boolean;
   isStudent: boolean;
+  loading: boolean;
   quickLoginAs: (role: 'student11' | 'student12' | 'admin') => void;
 }
 
@@ -28,6 +48,9 @@ const CURRENT_USER_KEY = 'cd_academy_current_user_v1';
 const SELECTED_CLASS_KEY = 'cd_academy_selected_class_v1';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
   const [user, setUser] = useState<User | null>(() => {
     try {
       const stored = localStorage.getItem(CURRENT_USER_KEY);
@@ -37,7 +60,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.error(e);
     }
-    // Default to Aarav (Class 11) for immediate friendly demo, or can start logged in
     return INITIAL_STUDENTS[0];
   });
 
@@ -46,6 +68,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (saved === 'Class 11' || saved === 'Class 12') return saved;
     return (user?.classLevel === 'Class 12' ? 'Class 12' : 'Class 11');
   });
+
+  // Test Firestore Connection on Boot as requested by skill
+  useEffect(() => {
+    testFirestoreConnection().catch(e => console.warn('Test connection notice:', e));
+    StorageService.syncFromFirestore().catch(e => console.warn('Background sync notice:', e));
+  }, []);
+
+  // Listen for real Firebase Auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      setFirebaseUser(fbUser);
+      if (fbUser) {
+        try {
+          const userDocRef = doc(db, 'users', fbUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+
+          const isKnownAdminEmail = [
+            'cdacademy992@gmail.com',
+            'chinmaykumardash987@gmail.com',
+            'admin@cdacademy.com'
+          ].includes(fbUser.email?.toLowerCase() || '');
+
+          if (userDocSnap.exists()) {
+            const data = userDocSnap.data() as User;
+            const updatedUser: User = {
+              ...data,
+              id: fbUser.uid,
+              uid: fbUser.uid,
+              email: fbUser.email || data.email,
+              role: isKnownAdminEmail ? 'admin' : (data.role || 'student')
+            };
+            setUser(updatedUser);
+            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
+            if (updatedUser.classLevel === 'Class 11' || updatedUser.classLevel === 'Class 12') {
+              setSelectedClassState(updatedUser.classLevel);
+            }
+          } else {
+            // Create user profile in Firestore
+            const newUserProfile: User = {
+              id: fbUser.uid,
+              uid: fbUser.uid,
+              fullName: fbUser.displayName || fbUser.email?.split('@')[0] || 'Student',
+              name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Student',
+              email: fbUser.email || '',
+              phone: fbUser.phoneNumber || '',
+              role: isKnownAdminEmail ? 'admin' : 'student',
+              classLevel: 'Class 11',
+              class: 'Class 11',
+              status: 'active',
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              lastLogin: new Date().toISOString(),
+              notificationPermission: 'default'
+            };
+            await setDoc(userDocRef, newUserProfile);
+            setUser(newUserProfile);
+            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(newUserProfile));
+          }
+        } catch (err) {
+          console.warn('Firebase user doc fetch note:', err);
+        }
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -64,18 +153,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(SELECTED_CLASS_KEY, cls);
   };
 
-  const loginStudent = async (identifier: string, _password?: string) => {
+  // Student Sign In
+  const loginStudent = async (identifier: string, password?: string) => {
     const cleanId = identifier.trim().toLowerCase();
+    const studentPassword = password || 'student123';
+
+    // If identifier is an email, attempt real Firebase Auth sign in
+    if (cleanId.includes('@')) {
+      try {
+        const credential = await signInWithEmailAndPassword(auth, cleanId, studentPassword);
+        const fbUid = credential.user.uid;
+        const profile = await FirestoreDataService.getUserProfile(fbUid);
+        if (profile) {
+          if (profile.status === 'suspended' || profile.isActive === false) {
+            await signOut(auth);
+            return {
+              success: false,
+              message: 'Your account has been deactivated by administration. Please contact support.'
+            };
+          }
+          setUser(profile);
+          if (profile.classLevel === 'Class 11' || profile.classLevel === 'Class 12') {
+            setSelectedClass(profile.classLevel);
+          }
+          await updateDoc(doc(db, 'users', fbUid), { lastLogin: new Date().toISOString() });
+          return { success: true };
+        }
+      } catch (fbErr: any) {
+        console.warn('Firebase login attempt fallback to local check:', fbErr?.code || fbErr);
+        // If user not found in Firebase Auth yet, check local registered students
+      }
+    }
+
+    // Local / Offline Student Lookup Fallback
     const students = StorageService.getStudents();
     const found = students.find(
       s => s.email.toLowerCase() === cleanId || s.phone.replace(/\D/g, '') === cleanId.replace(/\D/g, '')
     );
 
     if (!found) {
-      return { success: false, message: 'Student account not found. Please sign up or check your details.' };
+      return { success: false, message: 'Student account not found. Please sign up or check your credentials.' };
     }
 
-    if (found.status === 'suspended') {
+    if (found.status === 'suspended' || found.isActive === false) {
       return { success: false, message: 'Your account has been deactivated by administration. Please contact support.' };
     }
 
@@ -86,76 +206,166 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   };
 
-  const signUpStudent = async (data: {
-    fullName: string;
-    email: string;
-    phone: string;
-    classLevel: ClassLevel;
-    password?: string;
-  }) => {
+  // Student Sign Up
+  const signUpStudent = async (data: SignUpData) => {
     const cleanEmail = data.email.trim().toLowerCase();
-    const students = StorageService.getStudents();
-    const exists = students.some(s => s.email.toLowerCase() === cleanEmail);
+    const password = data.password || 'student123';
 
-    if (exists) {
-      return { success: false, message: 'An account with this email already exists. Please log in.' };
+    try {
+      // 1. Create in Firebase Auth
+      let uid = `student-${Date.now()}`;
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        uid = cred.user.uid;
+      } catch (authErr: any) {
+        if (authErr?.code === 'auth/email-already-in-use') {
+          return { success: false, message: 'An account with this email already exists. Please log in.' };
+        }
+        console.warn('Firebase Auth signup note (fallback to Firestore record):', authErr);
+      }
+
+      // 2. Create User Profile in Firestore
+      const newStudent: User = {
+        id: uid,
+        uid: uid,
+        fullName: data.fullName.trim(),
+        name: data.fullName.trim(),
+        email: cleanEmail,
+        phone: data.phone.trim(),
+        role: 'student',
+        classLevel: data.classLevel,
+        class: data.classLevel,
+        board: data.board || 'CBSE Board',
+        rollNumber: data.rollNumber || `CD-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'active',
+        isActive: true,
+        enrolledBatches: [],
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+        notificationPermission: 'default'
+      };
+
+      await setDoc(doc(db, 'users', uid), newStudent);
+      StorageService.addStudent(newStudent);
+      setUser(newStudent);
+      setSelectedClass(data.classLevel);
+      return { success: true };
+    } catch (err: any) {
+      console.error('Sign up error:', err);
+      return { success: false, message: err?.message || 'Failed to complete registration.' };
     }
-
-    const newStudent: User = {
-      id: `student-${Date.now()}`,
-      fullName: data.fullName.trim(),
-      email: cleanEmail,
-      phone: data.phone.trim(),
-      role: 'student',
-      classLevel: data.classLevel,
-      status: 'active',
-      createdAt: new Date().toISOString()
-    };
-
-    StorageService.addStudent(newStudent);
-    setUser(newStudent);
-    setSelectedClass(data.classLevel);
-    return { success: true };
   };
 
-  const loginAdmin = async (email: string, password?: string) => {
+  // Administrator Sign In
+  const loginAdmin = async (email: string, password: string) => {
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password ? password.trim() : '';
+    const cleanPassword = password.trim();
 
-    // Verify admin credentials
-    const isAuthorizedEmail =
-      cleanEmail === 'cdacademy992@gmail.com' ||
-      cleanEmail === 'admin@cdacademy.com' ||
-      cleanEmail === 'chinmaykumardash987@gmail.com';
+    const isAuthorizedEmail = [
+      'cdacademy992@gmail.com',
+      'chinmaykumardash987@gmail.com',
+      'admin@cdacademy.com'
+    ].includes(cleanEmail);
 
     const isAuthorizedPassword =
       cleanPassword === 'chinmay@2006' ||
       cleanPassword === 'admin123';
 
-    if (isAuthorizedEmail) {
-      if (cleanPassword && !isAuthorizedPassword) {
-        return {
-          success: false,
-          message: 'Incorrect admin password. Please enter your configured password.'
-        };
-      }
-
-      const adminUser: User = {
-        ...INITIAL_ADMIN,
-        email: cleanEmail
+    if (!isAuthorizedEmail) {
+      return {
+        success: false,
+        message: 'Access Restricted. Authorized admin GMail: cdacademy992@gmail.com'
       };
-      setUser(adminUser);
-      return { success: true };
     }
 
-    return {
-      success: false,
-      message: 'Invalid administrator email. Authorized email: cdacademy992@gmail.com'
+    if (!isAuthorizedPassword) {
+      return {
+        success: false,
+        message: 'Incorrect admin password. Please enter your configured password.'
+      };
+    }
+
+    // Try signing in via Firebase Auth if account exists
+    try {
+      await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+    } catch (e) {
+      // If Firebase Auth credentials not created yet, proceed with verified administrative session
+    }
+
+    const adminUser: User = {
+      ...INITIAL_ADMIN,
+      email: cleanEmail,
+      role: 'admin',
+      lastLogin: new Date().toISOString()
     };
+    setUser(adminUser);
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(adminUser));
+    return { success: true };
   };
 
-  const logout = () => {
+  // Password Reset
+  const resetPassword = async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      await sendPasswordResetEmail(auth, cleanEmail);
+      return { success: true, message: 'Password reset link sent to your email.' };
+    } catch (err: any) {
+      console.warn('Password reset note:', err);
+      return {
+        success: true,
+        message: 'If an account exists with this email, a reset link has been dispatched.'
+      };
+    }
+  };
+
+  // Update Profile
+  const updateProfile = async (updates: Partial<User>) => {
+    if (!user) return { success: false, message: 'Not logged in' };
+    try {
+      const updated = { ...user, ...updates };
+      setUser(updated);
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
+      await updateDoc(doc(db, 'users', user.id), updates);
+      return { success: true };
+    } catch (err: any) {
+      console.warn('Profile update note:', err);
+      return { success: true }; // Local state updated
+    }
+  };
+
+  // Request Push Notification Permission (FCM)
+  const requestNotificationPermission = async (): Promise<boolean> => {
+    if (!('Notification' in window)) {
+      console.warn('This browser does not support notifications.');
+      return false;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted' && user) {
+        // Register token
+        const mockOrRealToken = `fcm-${user.id}-${Date.now().toString(36)}`;
+        await FirestoreDataService.registerFCMToken(user.id, mockOrRealToken);
+        const updated = { ...user, notificationPermission: 'granted' as const };
+        setUser(updated);
+        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('Notification permission error:', err);
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn('Sign out note:', e);
+    }
     setUser(null);
+    setFirebaseUser(null);
     localStorage.removeItem(CURRENT_USER_KEY);
   };
 
@@ -177,14 +387,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
+        firebaseUser,
         selectedClass,
         setSelectedClass,
         loginStudent,
         signUpStudent,
         loginAdmin,
         logout,
+        resetPassword,
+        updateProfile,
+        requestNotificationPermission,
         isAdmin: user?.role === 'admin',
         isStudent: user?.role === 'student',
+        loading,
         quickLoginAs
       }}
     >

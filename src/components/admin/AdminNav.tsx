@@ -13,7 +13,10 @@ import {
   LogOut,
   ExternalLink,
   ChevronRight,
-  Smartphone
+  Smartphone,
+  Layers,
+  HelpCircle,
+  Bell
 } from 'lucide-react';
 
 interface AdminNavProps {
@@ -32,9 +35,12 @@ export const AdminNav: React.FC<AdminNavProps> = ({
   const navItems: { id: AdminTab; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'students', label: 'Students', icon: Users },
+    { id: 'batches', label: 'Batches', icon: Layers },
     { id: 'notes', label: 'Notes', icon: BookOpen },
     { id: 'lectures', label: 'Lectures', icon: Video },
     { id: 'dpp', label: 'DPP', icon: FileCheck },
+    { id: 'tests', label: 'Test Series', icon: HelpCircle },
+    { id: 'notifications', label: 'Push Notifications', icon: Bell },
     { id: 'guide', label: 'Download App (APK)', icon: Smartphone },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];

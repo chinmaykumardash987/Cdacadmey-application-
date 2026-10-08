@@ -12,7 +12,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onGoToSignUp,
   onGoToAdminLogin
 }) => {
-  const { loginStudent, quickLoginAs } = useAuth();
+  const { loginStudent, quickLoginAs, resetPassword } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,9 +36,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotInput.trim()) return;
+    await resetPassword(forgotInput);
     setForgotSent(true);
     setTimeout(() => {
       setShowForgotModal(false);

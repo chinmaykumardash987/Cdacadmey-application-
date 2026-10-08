@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { StorageService } from '../../services/storage';
 import { User, ClassLevel } from '../../types';
-import { Users, Search, Power, CheckCircle, Ban, Filter, Phone, Mail, Calendar, ShieldAlert } from 'lucide-react';
+import { Users, Search, Power, CheckCircle, Ban, Filter, Phone, Mail, Calendar, ShieldAlert, Eye, X, BookOpen, Award, IdCard } from 'lucide-react';
 
 export const AdminStudentManager: React.FC = () => {
   const [students, setStudents] = useState<User[]>(() => StorageService.getStudents());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterClass, setFilterClass] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
+  const [inspectStudent, setInspectStudent] = useState<User | null>(null);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -28,6 +29,9 @@ export const AdminStudentManager: React.FC = () => {
     const updated = StorageService.toggleStudentStatus(id);
     if (updated) {
       setStudents(StorageService.getStudents());
+      if (inspectStudent && inspectStudent.id === id) {
+        setInspectStudent(updated);
+      }
     }
   };
 
@@ -154,17 +158,26 @@ export const AdminStudentManager: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleToggleStatus(student.id)}
-                          className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition ${
-                            isActive
-                              ? 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200'
-                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
-                          }`}
-                        >
-                          <Power className="w-3 h-3" />
-                          <span>{isActive ? 'Disable Access' : 'Enable Access'}</span>
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setInspectStudent(student)}
+                            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
+                            title="View Student Profile"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleToggleStatus(student.id)}
+                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition ${
+                              isActive
+                                ? 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                            }`}
+                          >
+                            <Power className="w-3 h-3" />
+                            <span>{isActive ? 'Disable Access' : 'Enable Access'}</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

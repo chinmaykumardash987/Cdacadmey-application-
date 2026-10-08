@@ -1,4 +1,4 @@
-import { Note, Lecture, DPP, User } from '../types';
+import { Note, Lecture, DPP, User, Batch, TestItem, NotificationItem } from '../types';
 
 export const INITIAL_STUDENTS: User[] = [
   {
@@ -388,3 +388,142 @@ export const INITIAL_DPPS: DPP[] = [
     createdAt: '2026-09-27T14:00:00.000Z'
   }
 ];
+
+export const INITIAL_BATCHES: Batch[] = [
+  {
+    batchId: 'batch-udaan-11',
+    batchName: 'UDAAN 1.0 (Class 11 Science)',
+    class: 'Class 11',
+    description: 'Comprehensive 1-year foundation for Class 11 CBSE & CHSE Board Exams with Physics, Chemistry, Math & Biology.',
+    price: 3499,
+    startDate: '2026-06-01',
+    endDate: '2027-03-31',
+    status: 'active',
+    studentCount: 148,
+    createdAt: '2026-05-15T00:00:00.000Z'
+  },
+  {
+    batchId: 'batch-lakshya-12',
+    batchName: 'LAKSHYA 2.0 (Class 12 Boards + JEE/NEET)',
+    class: 'Class 12',
+    description: 'Intensive Class 12 board master batch with daily live lectures, formula sheets, handwritten notes, and high-yield DPPs.',
+    price: 3999,
+    startDate: '2026-04-15',
+    endDate: '2027-03-15',
+    status: 'active',
+    studentCount: 215,
+    createdAt: '2026-04-01T00:00:00.000Z'
+  },
+  {
+    batchId: 'batch-sankalp-fast',
+    batchName: 'SANKALP Crash Course (Revision & Mock Series)',
+    class: 'Class 12',
+    description: 'Fast-track 60-day syllabus revision, formula revision marathons, and full syllabus CBT mock tests.',
+    price: 1999,
+    startDate: '2026-11-01',
+    endDate: '2027-01-31',
+    status: 'upcoming',
+    studentCount: 78,
+    createdAt: '2026-08-20T00:00:00.000Z'
+  }
+];
+
+export const INITIAL_TESTS: TestItem[] = [
+  {
+    testId: 'test-cbt-1',
+    title: 'Kinematics & Vectors Grand CBT Test',
+    subject: 'Physics',
+    class: 'Class 11',
+    duration: 60,
+    totalMarks: 40,
+    status: 'live',
+    batchId: 'batch-udaan-11',
+    createdAt: '2026-09-25T10:00:00.000Z',
+    questions: [
+      {
+        id: 'q1',
+        question: 'A particle moves along a straight line such that its displacement x at time t is given by x = 3t² - 6t + 4. What is the velocity at t = 2s?',
+        options: ['6 m/s', '12 m/s', '0 m/s', '8 m/s'],
+        correctAnswer: 0,
+        marks: 4
+      },
+      {
+        id: 'q2',
+        question: 'For a projectile launched at an angle θ with speed u, the horizontal range is maximum when θ equals:',
+        options: ['30°', '45°', '60°', '90°'],
+        correctAnswer: 1,
+        marks: 4
+      },
+      {
+        id: 'q3',
+        question: 'Two vectors of equal magnitude A have a resultant of magnitude A. The angle between them is:',
+        options: ['60°', '90°', '120°', '180°'],
+        correctAnswer: 2,
+        marks: 4
+      }
+    ]
+  },
+  {
+    testId: 'test-cbt-2',
+    title: 'Electric Charges & Gauss Law Mock Exam',
+    subject: 'Physics',
+    class: 'Class 12',
+    duration: 90,
+    totalMarks: 50,
+    status: 'live',
+    batchId: 'batch-lakshya-12',
+    createdAt: '2026-09-28T14:00:00.000Z',
+    questions: [
+      {
+        id: 'q12-1',
+        question: 'The electric flux through a closed surface enclosing a charge Q is:',
+        options: ['Q / ε₀', 'Q · ε₀', '4π Q', 'Zero'],
+        correctAnswer: 0,
+        marks: 5
+      },
+      {
+        id: 'q12-2',
+        question: 'Electric field due to an infinite line of charge at distance r is proportional to:',
+        options: ['1 / r²', '1 / r', 'r', 'r²'],
+        correctAnswer: 1,
+        marks: 5
+      }
+    ]
+  }
+];
+
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+  {
+    notificationId: 'notif-welcome',
+    title: 'Welcome to CD ACADEMY! 🎓',
+    message: 'Welcome to your personalized learning workspace. Explore verified Class 11 and 12 handwritten notes, video classes, and daily practice problem sets.',
+    targetType: 'all',
+    actionTab: 'dashboard',
+    isActive: true,
+    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    readBy: []
+  },
+  {
+    notificationId: 'notif-physics-lecture',
+    title: 'New Lecture Available 🎥',
+    message: 'Your new Physics lecture "Coulomb Law & Superposition Principle" is now live. Start learning now.',
+    targetType: 'class',
+    targetClass: 'Class 12',
+    actionTab: 'lectures',
+    isActive: true,
+    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+    readBy: []
+  },
+  {
+    notificationId: 'notif-dpp-live',
+    title: "Today's DPP is Live 📝",
+    message: 'Practice today\'s DPP for Newton\'s Laws of Motion and track your preparation score.',
+    targetType: 'class',
+    targetClass: 'Class 11',
+    actionTab: 'dpp',
+    isActive: true,
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    readBy: []
+  }
+];
+

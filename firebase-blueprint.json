@@ -2,99 +2,254 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Student or Admin user profile",
+      "description": "Student or Admin user profile in CD ACADEMY",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "fullName": { "type": "string", "maxLength": 100 },
+        "name": { "type": "string", "maxLength": 100 },
         "email": { "type": "string", "format": "email", "maxLength": 120 },
-        "phone": { "type": "string", "maxLength": 20 },
+        "phone": { "type": "string", "maxLength": 25 },
+        "class": { "type": "string", "maxLength": 30 },
+        "board": { "type": "string", "maxLength": 50 },
         "role": { "type": "string", "enum": ["student", "admin"] },
-        "classLevel": { "type": "string", "enum": ["Class 11", "Class 12", "All"] },
-        "status": { "type": "string", "enum": ["active", "suspended"] },
-        "createdAt": { "type": "string" }
+        "profileImage": { "type": "string" },
+        "rollNumber": { "type": "string", "maxLength": 50 },
+        "enrolledBatches": { "type": "array" },
+        "createdAt": { "type": "string" },
+        "lastLogin": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "notificationPermission": { "type": "string", "enum": ["granted", "denied", "default"] }
       },
-      "required": ["id", "fullName", "email", "role", "status", "createdAt"]
+      "required": ["id", "name", "email", "role", "isActive", "createdAt"]
     },
-    "Note": {
-      "title": "Note",
-      "description": "Study note or chapter PDF document uploaded by admin",
+    "Batch": {
+      "title": "Batch",
+      "description": "Academic cohort or batch (e.g., UDAAN 1.0)",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string", "maxLength": 150 },
-        "classLevel": { "type": "string", "enum": ["Class 11", "Class 12"] },
-        "subject": { "type": "string", "maxLength": 50 },
-        "chapter": { "type": "string", "maxLength": 100 },
+        "batchId": { "type": "string" },
+        "batchName": { "type": "string", "maxLength": 120 },
+        "class": { "type": "string", "maxLength": 30 },
         "description": { "type": "string", "maxLength": 1000 },
-        "fileUrl": { "type": "string" },
-        "fileName": { "type": "string" },
-        "fileSize": { "type": "string" },
-        "pageCount": { "type": "number" },
-        "uploaderId": { "type": "string" },
+        "price": { "type": "number" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "archived", "upcoming"] },
+        "studentCount": { "type": "number" },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "title", "classLevel", "subject", "chapter", "fileUrl", "uploaderId", "createdAt"]
+      "required": ["batchId", "batchName", "class", "status", "createdAt"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Educational course track",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "class": { "type": "string", "maxLength": 30 },
+        "subject": { "type": "string", "maxLength": 50 },
+        "thumbnail": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "archived"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["courseId", "title", "class", "subject", "status", "createdAt"]
     },
     "Lecture": {
       "title": "Lecture",
-      "description": "Video lecture with YouTube or video streaming URL",
+      "description": "Video class lecture with YouTube or video streaming URL",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
+        "lectureId": { "type": "string" },
         "title": { "type": "string", "maxLength": 150 },
-        "classLevel": { "type": "string", "enum": ["Class 11", "Class 12"] },
+        "description": { "type": "string", "maxLength": 1000 },
         "subject": { "type": "string", "maxLength": 50 },
         "chapter": { "type": "string", "maxLength": 100 },
+        "class": { "type": "string", "maxLength": 30 },
+        "videoURL": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "batchId": { "type": "string" },
         "lectureNumber": { "type": "string", "maxLength": 20 },
-        "description": { "type": "string", "maxLength": 1000 },
-        "videoUrl": { "type": "string" },
-        "thumbnailUrl": { "type": "string" },
-        "duration": { "type": "string" },
-        "uploaderId": { "type": "string" },
-        "createdAt": { "type": "string" }
+        "duration": { "type": "string", "maxLength": 30 },
+        "uploadedAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["published", "draft"] }
       },
-      "required": ["id", "title", "classLevel", "subject", "chapter", "videoUrl", "uploaderId", "createdAt"]
+      "required": ["lectureId", "title", "subject", "chapter", "videoURL", "uploadedAt", "status"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Handwritten or NCERT PDF notes",
+      "type": "object",
+      "properties": {
+        "noteId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "subject": { "type": "string", "maxLength": 50 },
+        "chapter": { "type": "string", "maxLength": 100 },
+        "class": { "type": "string", "maxLength": 30 },
+        "pdfURL": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "batchId": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileSize": { "type": "string" },
+        "pageCount": { "type": "number" },
+        "uploadedAt": { "type": "string" },
+        "youtubeVideoUrl": { "type": "string" },
+        "youtubeVideoTitle": { "type": "string" }
+      },
+      "required": ["noteId", "title", "subject", "chapter", "pdfURL", "uploadedAt"]
     },
     "DPP": {
       "title": "DPP",
-      "description": "Daily Practice Problem sheet with questions",
+      "description": "Daily Practice Problem sheet",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
+        "dppId": { "type": "string" },
         "title": { "type": "string", "maxLength": 150 },
-        "classLevel": { "type": "string", "enum": ["Class 11", "Class 12"] },
         "subject": { "type": "string", "maxLength": 50 },
         "chapter": { "type": "string", "maxLength": 100 },
-        "description": { "type": "string", "maxLength": 1000 },
-        "fileUrl": { "type": "string" },
-        "questionsCount": { "type": "number" },
-        "uploaderId": { "type": "string" },
+        "class": { "type": "string", "maxLength": 30 },
+        "questions": { "type": "number" },
+        "pdfURL": { "type": "string" },
+        "batchId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "youtubeVideoUrl": { "type": "string" }
+      },
+      "required": ["dppId", "title", "subject", "createdAt"]
+    },
+    "Test": {
+      "title": "Test",
+      "description": "CBT Examination or Mock Test",
+      "type": "object",
+      "properties": {
+        "testId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "subject": { "type": "string", "maxLength": 50 },
+        "class": { "type": "string", "maxLength": 30 },
+        "questions": { "type": "array" },
+        "duration": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "batchId": { "type": "string" },
+        "status": { "type": "string", "enum": ["upcoming", "live", "completed"] },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "title", "classLevel", "subject", "chapter", "uploaderId", "createdAt"]
+      "required": ["testId", "title", "subject", "class", "duration", "totalMarks", "createdAt"]
+    },
+    "TestResult": {
+      "title": "TestResult",
+      "description": "Student score and response record for an online test",
+      "type": "object",
+      "properties": {
+        "resultId": { "type": "string" },
+        "userId": { "type": "string" },
+        "testId": { "type": "string" },
+        "testTitle": { "type": "string", "maxLength": 150 },
+        "score": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "percentage": { "type": "number" },
+        "submittedAt": { "type": "string" },
+        "timeTaken": { "type": "number" }
+      },
+      "required": ["resultId", "userId", "testId", "score", "submittedAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app and push notification record",
+      "type": "object",
+      "properties": {
+        "notificationId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "message": { "type": "string", "maxLength": 500 },
+        "imageURL": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["all", "class", "batch", "student"] },
+        "targetClass": { "type": "string" },
+        "targetBatch": { "type": "string" },
+        "targetStudentId": { "type": "string" },
+        "actionUrl": { "type": "string" },
+        "actionTab": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "readBy": { "type": "array" }
+      },
+      "required": ["notificationId", "title", "message", "targetType", "createdAt", "isActive"]
+    },
+    "NotificationToken": {
+      "title": "NotificationToken",
+      "description": "FCM device push token linked to user",
+      "type": "object",
+      "properties": {
+        "tokenId": { "type": "string" },
+        "userId": { "type": "string" },
+        "FCMToken": { "type": "string", "maxLength": 500 },
+        "device": { "type": "string", "maxLength": 100 },
+        "platform": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["tokenId", "userId", "FCMToken", "updatedAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Notice board broadcast message",
+      "type": "object",
+      "properties": {
+        "announcementId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "message": { "type": "string", "maxLength": 1000 },
+        "targetAudience": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["announcementId", "title", "message", "createdAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "Registered students and administrator user accounts"
+      "description": "User profiles and credentials info"
     },
-    "/notes/{noteId}": {
-      "schema": "Note",
-      "description": "Class 11 and Class 12 notes collection"
+    "/batches/{batchId}": {
+      "schema": "Batch",
+      "description": "Class batches collection"
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Educational course tracks"
     },
     "/lectures/{lectureId}": {
       "schema": "Lecture",
-      "description": "Video lectures collection"
+      "description": "Video class lectures"
     },
-    "/dpps/{dppId}": {
+    "/notes/{noteId}": {
+      "schema": "Note",
+      "description": "Handwritten and chapter study notes"
+    },
+    "/dpp/{dppId}": {
       "schema": "DPP",
-      "description": "Daily practice problems collection"
+      "description": "Daily Practice Problem sheets"
+    },
+    "/tests/{testId}": {
+      "schema": "Test",
+      "description": "Online CBT and mock tests"
+    },
+    "/testResults/{resultId}": {
+      "schema": "TestResult",
+      "description": "Student test submission outcomes"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "System and admin push/in-app notifications"
+    },
+    "/notificationTokens/{tokenId}": {
+      "schema": "NotificationToken",
+      "description": "Device FCM registration tokens"
+    },
+    "/announcements/{announcementId}": {
+      "schema": "Announcement",
+      "description": "Important academy announcements"
     },
     "/admins/{adminId}": {
       "schema": { "$ref": "#/entities/User" },
-      "description": "Admin authorization mapping documents"
+      "description": "Authorized admin accounts registry"
     }
   }
 }

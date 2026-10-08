@@ -5,6 +5,9 @@ import { AdminStudentManager } from './AdminStudentManager';
 import { AdminNotesManager } from './AdminNotesManager';
 import { AdminLecturesManager } from './AdminLecturesManager';
 import { AdminDppManager } from './AdminDppManager';
+import { AdminBatchManager } from './AdminBatchManager';
+import { AdminTestManager } from './AdminTestManager';
+import { AdminNotificationManager } from './AdminNotificationManager';
 import { AdminDeploymentGuide } from './AdminDeploymentGuide';
 import { AdminSettings } from './AdminSettings';
 import { PdfViewerModal } from '../common/PdfViewerModal';
@@ -36,6 +39,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSwitchToStudentView })
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
         {activeTab === 'dashboard' && <AdminDashboard onNavigateTab={setActiveTab} />}
         {activeTab === 'students' && <AdminStudentManager />}
+        {activeTab === 'batches' && <AdminBatchManager />}
         {activeTab === 'notes' && (
           <AdminNotesManager
             onPreviewNote={setPreviewNote}
@@ -49,6 +53,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSwitchToStudentView })
             onPreviewVideo={setPreviewLecture}
           />
         )}
+        {activeTab === 'tests' && <AdminTestManager />}
+        {activeTab === 'notifications' && <AdminNotificationManager />}
         {activeTab === 'guide' && <AdminDeploymentGuide />}
         {activeTab === 'settings' && <AdminSettings />}
       </main>

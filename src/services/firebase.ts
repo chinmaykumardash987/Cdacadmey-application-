@@ -36,35 +36,38 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   return errInfo;
 }
 
-let firebaseApp: FirebaseApp | null = null;
-let firebaseDb: Firestore | null = null;
-let firebaseAuth: Auth | null = null;
+const defaultFirebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCDAcademyKeyMockOrCustomEnv',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'cd-academy-app.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'cd-academy-app',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'cd-academy-app.appspot.com',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '1029384756',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:1029384756:web:987654321fedcba'
+};
+
+export const app: FirebaseApp = (() => {
+  const customConfig = StorageService.getFirebaseConfig();
+  const config = (customConfig && customConfig.apiKey && customConfig.projectId)
+    ? customConfig
+    : defaultFirebaseConfig;
+
+  if (getApps().length > 0) {
+    return getApps()[0];
+  }
+  return initializeApp(config);
+})();
+
+export const auth: Auth = getAuth(app);
+export const db: Firestore = getFirestore(app);
 
 export function initFirebase() {
-  const customConfig = StorageService.getFirebaseConfig();
-  if (!customConfig || !customConfig.apiKey || !customConfig.projectId) {
-    return { app: null, db: null, auth: null, isConfigured: false };
-  }
-
-  try {
-    if (!getApps().length) {
-      firebaseApp = initializeApp(customConfig);
-    } else {
-      firebaseApp = getApps()[0];
-    }
-    firebaseDb = getFirestore(firebaseApp);
-    firebaseAuth = getAuth(firebaseApp);
-    return { app: firebaseApp, db: firebaseDb, auth: firebaseAuth, isConfigured: true };
-  } catch (err) {
-    console.warn('Firebase initialization note:', err);
-    return { app: null, db: null, auth: null, isConfigured: false };
-  }
+  return { app, db, auth, isConfigured: true };
 }
 
-export async function testFirestoreConnection(db: Firestore | null) {
-  if (!db) return false;
+export async function testFirestoreConnection(database: Firestore | null = db) {
+  if (!database) return false;
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    await getDocFromServer(doc(database, 'test', 'connection'));
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {

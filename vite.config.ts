@@ -11,7 +11,7 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'icon-192.svg', 'icon-512.svg', 'logo.svg'],
+        includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'icon-192.svg', 'icon-512.svg', 'logo.svg'],
         manifest: {
           id: '/',
           name: 'CD ACADEMY - Har Bachha Padhega',
@@ -25,6 +25,24 @@ export default defineConfig(() => {
           scope: '/',
           icons: [
             {
+              src: '/icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/icon-maskable-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable'
+            },
+            {
               src: '/icon-192.svg',
               sizes: '192x192',
               type: 'image/svg+xml',
@@ -35,12 +53,6 @@ export default defineConfig(() => {
               sizes: '512x512',
               type: 'image/svg+xml',
               purpose: 'any'
-            },
-            {
-              src: '/icon-512.svg',
-              sizes: '512x512',
-              type: 'image/svg+xml',
-              purpose: 'maskable'
             }
           ]
         },
@@ -52,7 +64,7 @@ export default defineConfig(() => {
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname || '.', '.'),
       },
     },
     server: {

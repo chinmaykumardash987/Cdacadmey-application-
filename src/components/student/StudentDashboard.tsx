@@ -32,7 +32,8 @@ import {
   ChevronRight,
   TrendingUp,
   Bookmark,
-  Smartphone
+  Smartphone,
+  Bell
 } from 'lucide-react';
 import { ApkDownloadModal } from '../common/ApkDownloadModal';
 
@@ -47,10 +48,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onOpenPdf,
   onOpenVideo
 }) => {
-  const { user, selectedClass, setSelectedClass } = useAuth();
+  const { user, selectedClass, setSelectedClass, requestNotificationPermission } = useAuth();
   const [viewMode, setViewMode] = useState<'icon' | 'card'>('icon');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [showApkModal, setShowApkModal] = useState(false);
+  const [dismissNotifBanner, setDismissNotifBanner] = useState(false);
 
   const allNotes = StorageService.getNotes();
   const allLectures = StorageService.getLectures();
@@ -333,6 +335,40 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* User-friendly Notification Permission Prompt */}
+      {user?.notificationPermission !== 'granted' && !dismissNotifBanner && (
+        <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 rounded-3xl p-4 sm:p-5 text-white shadow-lg shadow-red-600/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
+              <Bell className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-white">Stay updated with CD ACADEMY!</h4>
+              <p className="text-xs text-red-100 mt-0.5 leading-relaxed">
+                Get alerts for new lectures, notes, tests, DPPs and important announcements.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <button
+              onClick={() => setDismissNotifBanner(true)}
+              className="px-3 py-1.5 text-xs text-red-100 hover:text-white transition font-medium"
+            >
+              Later
+            </button>
+            <button
+              onClick={async () => {
+                await requestNotificationPermission();
+                setDismissNotifBanner(true);
+              }}
+              className="px-4 py-2 bg-white text-red-600 hover:bg-red-50 text-xs font-extrabold rounded-xl shadow-xs transition"
+            >
+              Enable Notifications 🔔
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. QUICK LEARNING HUB (Icon Type Grid) */}
       <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-xs">
