@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { Lecture, Subject, ClassLevel } from '../../types';
 import { Plus, Search, Trash2, Edit2, Video, Play, X, AlertTriangle, ExternalLink, Youtube, Check, Sparkles } from 'lucide-react';
@@ -11,7 +12,7 @@ interface AdminLecturesManagerProps {
 }
 
 export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPreviewVideo }) => {
-  const [lectures, setLectures] = useState<Lecture[]>(() => StorageService.getLectures());
+  const { lectures, addLecture, updateLecture, deleteLecture } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterClass, setFilterClass] = useState<string>('All');
   const [filterSubject, setFilterSubject] = useState<string>('All');
@@ -83,7 +84,7 @@ export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPr
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !chapter.trim() || !videoUrl.trim()) {
       alert('Please fill in lecture title, chapter and video URL');
@@ -91,7 +92,7 @@ export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPr
     }
 
     if (editingLecture) {
-      const updated = StorageService.updateLecture(editingLecture.id, {
+      await updateLecture(editingLecture.id, {
         title,
         classLevel,
         subject,
@@ -102,11 +103,8 @@ export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPr
         thumbnailUrl: thumbnailUrl || 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?auto=format&fit=crop&w=800&q=80',
         duration
       });
-      if (updated) {
-        setLectures(StorageService.getLectures());
-      }
     } else {
-      StorageService.addLecture({
+      await addLecture({
         title,
         classLevel,
         subject,
@@ -119,15 +117,13 @@ export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPr
         uploaderId: 'admin-1',
         uploaderName: 'Admin'
       });
-      setLectures(StorageService.getLectures());
     }
 
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    StorageService.deleteLecture(id);
-    setLectures(StorageService.getLectures());
+  const handleDelete = async (id: string) => {
+    await deleteLecture(id);
     setDeleteConfirmId(null);
   };
 

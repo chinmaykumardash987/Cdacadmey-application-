@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { Lecture, Subject, ClassLevel } from '../../types';
 import { Video, Search, Play, Clock, Calendar, CheckCircle2, BookOpen } from 'lucide-react';
@@ -16,11 +17,10 @@ export const LecturesSection: React.FC<LecturesSectionProps> = ({
   onOpenNotes
 }) => {
   const { selectedClass, setSelectedClass } = useAuth();
+  const { lectures: allLectures } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
   const [selectedChapter, setSelectedChapter] = useState<string>('All');
-
-  const allLectures = StorageService.getLectures();
 
   const classLectures = useMemo(() => {
     return allLectures.filter(l => l.classLevel === selectedClass);

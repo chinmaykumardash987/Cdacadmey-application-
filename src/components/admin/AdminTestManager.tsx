@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { FirestoreDataService } from '../../services/firestoreData';
 import { TestItem, TestQuestion, TestResultItem, Subject } from '../../types';
 import { HelpCircle, Plus, Edit2, Trash2, Check, X, Search, Clock, Award, Users, Sparkles } from 'lucide-react';
 
 export const AdminTestManager: React.FC = () => {
-  const [tests, setTests] = useState<TestItem[]>(() => StorageService.getTests());
+  const { tests, addTest } = useData();
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewingResults, setViewingResults] = useState<string | null>(null);
@@ -30,7 +31,7 @@ export const AdminTestManager: React.FC = () => {
     t.class.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleCreateTest = (e: React.FormEvent) => {
+  const handleCreateTest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
@@ -44,7 +45,7 @@ export const AdminTestManager: React.FC = () => {
       }
     ];
 
-    const newTest = StorageService.addTest({
+    await addTest({
       title,
       subject,
       class: targetClass,
@@ -54,7 +55,6 @@ export const AdminTestManager: React.FC = () => {
       questions
     });
 
-    setTests([newTest, ...tests]);
     setShowAddModal(false);
     // Reset form
     setTitle('');

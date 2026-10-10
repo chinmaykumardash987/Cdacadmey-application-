@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { DPP, Subject, ClassLevel } from '../../types';
 import { Plus, Search, Trash2, Edit2, FileCheck, X, AlertTriangle, Eye, Upload, Youtube, Check, Play } from 'lucide-react';
@@ -12,7 +13,7 @@ interface AdminDppManagerProps {
 }
 
 export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, onPreviewVideo }) => {
-  const [dpps, setDpps] = useState<DPP[]>(() => StorageService.getDPPs());
+  const { dpps, addDPP, updateDPP, deleteDPP } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterClass, setFilterClass] = useState<string>('All');
   const [filterSubject, setFilterSubject] = useState<string>('All');
@@ -87,7 +88,7 @@ export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, 
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !chapter.trim()) {
       alert('Please fill in title and chapter');
@@ -95,7 +96,7 @@ export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, 
     }
 
     if (editingDpp) {
-      const updated = StorageService.updateDPP(editingDpp.id, {
+      await updateDPP(editingDpp.id, {
         title,
         classLevel,
         subject,
@@ -107,11 +108,8 @@ export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, 
         youtubeVideoUrl: youtubeVideoUrl.trim() || undefined,
         youtubeVideoTitle: youtubeVideoTitle.trim() || (youtubeVideoUrl ? `${title} Video Solution` : undefined)
       });
-      if (updated) {
-        setDpps(StorageService.getDPPs());
-      }
     } else {
-      StorageService.addDPP({
+      await addDPP({
         title,
         classLevel,
         subject,
@@ -125,15 +123,13 @@ export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, 
         youtubeVideoUrl: youtubeVideoUrl.trim() || undefined,
         youtubeVideoTitle: youtubeVideoTitle.trim() || (youtubeVideoUrl ? `${title} Video Solution` : undefined)
       });
-      setDpps(StorageService.getDPPs());
     }
 
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    StorageService.deleteDPP(id);
-    setDpps(StorageService.getDPPs());
+  const handleDelete = async (id: string) => {
+    await deleteDPP(id);
     setDeleteConfirmId(null);
   };
 

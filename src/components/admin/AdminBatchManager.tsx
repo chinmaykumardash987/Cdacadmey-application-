@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { Batch } from '../../types';
 import { Layers, Plus, Edit2, Trash2, Check, X, Search, Calendar, Users, DollarSign, Sparkles } from 'lucide-react';
 
 export const AdminBatchManager: React.FC = () => {
-  const [batches, setBatches] = useState<Batch[]>(() => StorageService.getBatches());
+  const { batches, addBatch, updateBatch, deleteBatch } = useData();
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
@@ -47,26 +48,22 @@ export const AdminBatchManager: React.FC = () => {
     setShowAddModal(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!batchName.trim()) return;
 
     if (editingBatch) {
-      StorageService.saveBatches(
-        batches.map(b => b.batchId === editingBatch.batchId ? {
-          ...b,
-          batchName,
-          class: batchClass,
-          description,
-          price,
-          startDate,
-          endDate,
-          status
-        } : b)
-      );
-      setBatches(StorageService.getBatches());
+      await updateBatch(editingBatch.batchId, {
+        batchName,
+        class: batchClass,
+        description,
+        price,
+        startDate,
+        endDate,
+        status
+      });
     } else {
-      const created = StorageService.addBatch({
+      await addBatch({
         batchName,
         class: batchClass,
         description,
@@ -76,15 +73,13 @@ export const AdminBatchManager: React.FC = () => {
         status,
         studentCount: 0
       });
-      setBatches([created, ...batches]);
     }
     setShowAddModal(false);
   };
 
-  const handleDelete = (batchId: string) => {
+  const handleDelete = async (batchId: string) => {
     if (window.confirm('Are you sure you want to delete this batch?')) {
-      StorageService.deleteBatch(batchId);
-      setBatches(batches.filter(b => b.batchId !== batchId));
+      await deleteBatch(batchId);
     }
   };
 

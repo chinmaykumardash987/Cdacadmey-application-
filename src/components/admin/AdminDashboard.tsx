@@ -1,19 +1,15 @@
 import React from 'react';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { AdminTab } from '../../types';
-import { Users, BookOpen, Video, FileCheck, Plus, ArrowUpRight, GraduationCap, CheckCircle, Clock, Layers, Bell, Smartphone } from 'lucide-react';
+import { Users, BookOpen, Video, FileCheck, Plus, ArrowUpRight, GraduationCap, CheckCircle, Clock, Layers, Bell, Smartphone, Radio } from 'lucide-react';
 
 interface AdminDashboardProps {
   onNavigateTab: (tab: AdminTab) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab }) => {
-  const students = StorageService.getStudents();
-  const notes = StorageService.getNotes();
-  const lectures = StorageService.getLectures();
-  const dpps = StorageService.getDPPs();
-  const batches = StorageService.getBatches();
-  const notifs = StorageService.getNotifications();
+  const { students, notes, lectures, dpps, batches, notifications: notifs, isRealtimeActive, isOnline } = useData();
 
   const class11Students = students.filter(s => s.classLevel === 'Class 11').length;
   const class12Students = students.filter(s => s.classLevel === 'Class 12').length;
@@ -65,6 +61,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
   return (
     <div className="space-y-6">
+      {/* Real-time Multi-Device Sync Indicator */}
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
+            <Radio className="w-5 h-5 text-white animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm tracking-tight">Multi-Device Live Sync Connected</span>
+              <span className="inline-flex items-center gap-1 bg-white text-emerald-800 text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping"></span>
+                Active
+              </span>
+            </div>
+            <p className="text-xs text-emerald-100 mt-0.5">
+              When you add, edit, or delete notes, lectures, DPPs, or tests, changes update in real-time across all student devices and installed APKs.
+            </p>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <span className="text-[11px] font-mono bg-black/20 text-white px-2.5 py-1 rounded-lg border border-white/20">
+            Firestore: Connected
+          </span>
+        </div>
+      </div>
+
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div>

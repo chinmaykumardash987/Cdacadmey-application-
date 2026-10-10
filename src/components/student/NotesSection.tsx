@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { Note, Subject, ClassLevel } from '../../types';
 import { Search, Filter, BookOpen, Download, Eye, FileText, Calendar, Tag, ChevronRight, Youtube, Play } from 'lucide-react';
@@ -14,11 +15,10 @@ const ALL_SUBJECTS: Subject[] = ['Physics', 'Chemistry', 'Mathematics', 'Biology
 
 export const NotesSection: React.FC<NotesSectionProps> = ({ onOpenPdf, onOpenVideo }) => {
   const { selectedClass, setSelectedClass } = useAuth();
+  const { notes: allNotes } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
   const [selectedChapter, setSelectedChapter] = useState<string>('All');
-
-  const allNotes = StorageService.getNotes();
 
   // Filter notes by class, subject, chapter, and search
   const classNotes = useMemo(() => {

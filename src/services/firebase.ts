@@ -1,7 +1,7 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore, doc, getDocFromServer } from 'firebase/firestore';
-import { StorageService } from './storage';
+import firebaseAppletConfig from '../../firebase-applet-config.json';
 
 export enum OperationType {
   CREATE = 'create',
@@ -36,38 +36,39 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   return errInfo;
 }
 
-const defaultFirebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCDAcademyKeyMockOrCustomEnv',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'cd-academy-app.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'cd-academy-app',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'cd-academy-app.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '1029384756',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:1029384756:web:987654321fedcba'
+// Active Firebase Configuration with seamless fallback to provisioned applet credentials
+export const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseAppletConfig.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseAppletConfig.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseAppletConfig.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseAppletConfig.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId
 };
 
 export const app: FirebaseApp = (() => {
-  const customConfig = StorageService.getFirebaseConfig();
-  const config = (customConfig && customConfig.apiKey && customConfig.projectId)
-    ? customConfig
-    : defaultFirebaseConfig;
-
   if (getApps().length > 0) {
     return getApps()[0];
   }
-  return initializeApp(config);
+  return initializeApp(firebaseConfig);
 })();
 
 export const auth: Auth = getAuth(app);
-export const db: Firestore = getFirestore(app);
+
+// Connect to the specific provisioned Firestore database
+const dbName = firebaseAppletConfig.firestoreDatabaseId;
+export const db: Firestore = (dbName && dbName !== '(default)')
+  ? getFirestore(app, dbName)
+  : getFirestore(app);
 
 export function initFirebase() {
-  return { app, db, auth, isConfigured: true };
+  return { app, db, auth, isConfigured: true, databaseId: dbName };
 }
 
 export async function testFirestoreConnection(database: Firestore | null = db) {
   if (!database) return false;
   try {
-    await getDocFromServer(doc(database, 'test', 'connection'));
+    await getDocFromServer(doc(database, 'batches', 'connection-check'));
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
@@ -76,3 +77,4 @@ export async function testFirestoreConnection(database: Firestore | null = db) {
     return false;
   }
 }
+

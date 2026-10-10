@@ -33,7 +33,7 @@ import {
   INITIAL_NOTIFICATIONS
 } from './initialData';
 
-// Local storage fallback cache keys for offline tolerance & instant startup
+// Local storage fallback cache keys for instant offline startup
 const CACHE_KEYS = {
   NOTES: 'cd_academy_fs_notes',
   LECTURES: 'cd_academy_fs_lectures',
@@ -70,20 +70,54 @@ export const FirestoreDataService = {
     try {
       const snap = await getDocs(collection(db, 'notes'));
       if (snap.empty) {
-        // Seed initial notes into Firestore
-        const notesToSeed = INITIAL_NOTES;
-        for (const n of notesToSeed) {
-          await setDoc(doc(db, 'notes', n.id), n);
-        }
-        setLocalCache(CACHE_KEYS.NOTES, notesToSeed);
-        return notesToSeed;
+        return await this.seedNotes();
       }
       const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as Note));
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       setLocalCache(CACHE_KEYS.NOTES, list);
       return list;
     } catch (err) {
       console.warn('Firestore getNotes fallback to cache/seed:', err);
       return getLocalCache(CACHE_KEYS.NOTES, INITIAL_NOTES);
+    }
+  },
+
+  async seedNotes(): Promise<Note[]> {
+    try {
+      for (const n of INITIAL_NOTES) {
+        await setDoc(doc(db, 'notes', n.id), n, { merge: true });
+      }
+      setLocalCache(CACHE_KEYS.NOTES, INITIAL_NOTES);
+      return INITIAL_NOTES;
+    } catch (e) {
+      console.warn('Seed notes notice:', e);
+      return INITIAL_NOTES;
+    }
+  },
+
+  subscribeNotes(callback: (notes: Note[]) => void): () => void {
+    try {
+      return onSnapshot(
+        collection(db, 'notes'),
+        (snap) => {
+          if (snap.empty) {
+            this.seedNotes().then(callback).catch(() => callback(getLocalCache(CACHE_KEYS.NOTES, INITIAL_NOTES)));
+            return;
+          }
+          const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as Note));
+          list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          setLocalCache(CACHE_KEYS.NOTES, list);
+          callback(list);
+        },
+        (err) => {
+          console.warn('Realtime notes subscription warning:', err);
+          callback(getLocalCache(CACHE_KEYS.NOTES, INITIAL_NOTES));
+        }
+      );
+    } catch (e) {
+      console.warn('subscribeNotes fallback:', e);
+      callback(getLocalCache(CACHE_KEYS.NOTES, INITIAL_NOTES));
+      return () => {};
     }
   },
 
@@ -101,17 +135,16 @@ export const FirestoreDataService = {
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `notes/${id}`);
     }
-    // Update local cache
     const current = getLocalCache<Note[]>(CACHE_KEYS.NOTES, INITIAL_NOTES);
     setLocalCache(CACHE_KEYS.NOTES, [newNote, ...current]);
-    // Trigger Automatic Notification
+    // Auto Notification
     this.triggerNotification({
       title: 'New Notes Uploaded 📚',
       message: `New ${newNote.classLevel} ${newNote.subject} notes for "${newNote.chapter}" are now available.`,
       targetType: 'class',
       targetClass: newNote.classLevel,
       actionTab: 'notes'
-    });
+    }).catch(e => console.warn('Notification trigger notice:', e));
     return newNote;
   },
 
@@ -142,18 +175,54 @@ export const FirestoreDataService = {
     try {
       const snap = await getDocs(collection(db, 'lectures'));
       if (snap.empty) {
-        for (const l of INITIAL_LECTURES) {
-          await setDoc(doc(db, 'lectures', l.id), l);
-        }
-        setLocalCache(CACHE_KEYS.LECTURES, INITIAL_LECTURES);
-        return INITIAL_LECTURES;
+        return await this.seedLectures();
       }
       const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as Lecture));
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       setLocalCache(CACHE_KEYS.LECTURES, list);
       return list;
     } catch (err) {
       console.warn('Firestore getLectures fallback to cache/seed:', err);
       return getLocalCache(CACHE_KEYS.LECTURES, INITIAL_LECTURES);
+    }
+  },
+
+  async seedLectures(): Promise<Lecture[]> {
+    try {
+      for (const l of INITIAL_LECTURES) {
+        await setDoc(doc(db, 'lectures', l.id), l, { merge: true });
+      }
+      setLocalCache(CACHE_KEYS.LECTURES, INITIAL_LECTURES);
+      return INITIAL_LECTURES;
+    } catch (e) {
+      console.warn('Seed lectures notice:', e);
+      return INITIAL_LECTURES;
+    }
+  },
+
+  subscribeLectures(callback: (lectures: Lecture[]) => void): () => void {
+    try {
+      return onSnapshot(
+        collection(db, 'lectures'),
+        (snap) => {
+          if (snap.empty) {
+            this.seedLectures().then(callback).catch(() => callback(getLocalCache(CACHE_KEYS.LECTURES, INITIAL_LECTURES)));
+            return;
+          }
+          const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as Lecture));
+          list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          setLocalCache(CACHE_KEYS.LECTURES, list);
+          callback(list);
+        },
+        (err) => {
+          console.warn('Realtime lectures subscription warning:', err);
+          callback(getLocalCache(CACHE_KEYS.LECTURES, INITIAL_LECTURES));
+        }
+      );
+    } catch (e) {
+      console.warn('subscribeLectures fallback:', e);
+      callback(getLocalCache(CACHE_KEYS.LECTURES, INITIAL_LECTURES));
+      return () => {};
     }
   },
 
@@ -180,7 +249,7 @@ export const FirestoreDataService = {
       targetType: 'class',
       targetClass: newLec.classLevel,
       actionTab: 'lectures'
-    });
+    }).catch(e => console.warn('Notification trigger notice:', e));
     return newLec;
   },
 
@@ -211,18 +280,54 @@ export const FirestoreDataService = {
     try {
       const snap = await getDocs(collection(db, 'dpp'));
       if (snap.empty) {
-        for (const d of INITIAL_DPPS) {
-          await setDoc(doc(db, 'dpp', d.id), d);
-        }
-        setLocalCache(CACHE_KEYS.DPP, INITIAL_DPPS);
-        return INITIAL_DPPS;
+        return await this.seedDPPs();
       }
       const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as DPP));
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       setLocalCache(CACHE_KEYS.DPP, list);
       return list;
     } catch (err) {
       console.warn('Firestore getDPPs fallback to cache/seed:', err);
       return getLocalCache(CACHE_KEYS.DPP, INITIAL_DPPS);
+    }
+  },
+
+  async seedDPPs(): Promise<DPP[]> {
+    try {
+      for (const d of INITIAL_DPPS) {
+        await setDoc(doc(db, 'dpp', d.id), d, { merge: true });
+      }
+      setLocalCache(CACHE_KEYS.DPP, INITIAL_DPPS);
+      return INITIAL_DPPS;
+    } catch (e) {
+      console.warn('Seed DPPs notice:', e);
+      return INITIAL_DPPS;
+    }
+  },
+
+  subscribeDPPs(callback: (dpps: DPP[]) => void): () => void {
+    try {
+      return onSnapshot(
+        collection(db, 'dpp'),
+        (snap) => {
+          if (snap.empty) {
+            this.seedDPPs().then(callback).catch(() => callback(getLocalCache(CACHE_KEYS.DPP, INITIAL_DPPS)));
+            return;
+          }
+          const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as DPP));
+          list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          setLocalCache(CACHE_KEYS.DPP, list);
+          callback(list);
+        },
+        (err) => {
+          console.warn('Realtime DPP subscription warning:', err);
+          callback(getLocalCache(CACHE_KEYS.DPP, INITIAL_DPPS));
+        }
+      );
+    } catch (e) {
+      console.warn('subscribeDPPs fallback:', e);
+      callback(getLocalCache(CACHE_KEYS.DPP, INITIAL_DPPS));
+      return () => {};
     }
   },
 
@@ -248,7 +353,7 @@ export const FirestoreDataService = {
       targetType: 'class',
       targetClass: newDPP.classLevel,
       actionTab: 'dpp'
-    });
+    }).catch(e => console.warn('Notification trigger notice:', e));
     return newDPP;
   },
 
@@ -279,11 +384,7 @@ export const FirestoreDataService = {
     try {
       const snap = await getDocs(collection(db, 'batches'));
       if (snap.empty) {
-        for (const b of INITIAL_BATCHES) {
-          await setDoc(doc(db, 'batches', b.batchId), b);
-        }
-        setLocalCache(CACHE_KEYS.BATCHES, INITIAL_BATCHES);
-        return INITIAL_BATCHES;
+        return await this.seedBatches();
       }
       const list = snap.docs.map(d => ({ ...d.data(), batchId: d.id } as Batch));
       setLocalCache(CACHE_KEYS.BATCHES, list);
@@ -291,6 +392,44 @@ export const FirestoreDataService = {
     } catch (err) {
       console.warn('Firestore getBatches fallback to cache/seed:', err);
       return getLocalCache(CACHE_KEYS.BATCHES, INITIAL_BATCHES);
+    }
+  },
+
+  async seedBatches(): Promise<Batch[]> {
+    try {
+      for (const b of INITIAL_BATCHES) {
+        await setDoc(doc(db, 'batches', b.batchId), b, { merge: true });
+      }
+      setLocalCache(CACHE_KEYS.BATCHES, INITIAL_BATCHES);
+      return INITIAL_BATCHES;
+    } catch (e) {
+      console.warn('Seed batches notice:', e);
+      return INITIAL_BATCHES;
+    }
+  },
+
+  subscribeBatches(callback: (batches: Batch[]) => void): () => void {
+    try {
+      return onSnapshot(
+        collection(db, 'batches'),
+        (snap) => {
+          if (snap.empty) {
+            this.seedBatches().then(callback).catch(() => callback(getLocalCache(CACHE_KEYS.BATCHES, INITIAL_BATCHES)));
+            return;
+          }
+          const list = snap.docs.map(d => ({ ...d.data(), batchId: d.id } as Batch));
+          setLocalCache(CACHE_KEYS.BATCHES, list);
+          callback(list);
+        },
+        (err) => {
+          console.warn('Realtime batches subscription warning:', err);
+          callback(getLocalCache(CACHE_KEYS.BATCHES, INITIAL_BATCHES));
+        }
+      );
+    } catch (e) {
+      console.warn('subscribeBatches fallback:', e);
+      callback(getLocalCache(CACHE_KEYS.BATCHES, INITIAL_BATCHES));
+      return () => {};
     }
   },
 
@@ -338,11 +477,7 @@ export const FirestoreDataService = {
     try {
       const snap = await getDocs(collection(db, 'tests'));
       if (snap.empty) {
-        for (const t of INITIAL_TESTS) {
-          await setDoc(doc(db, 'tests', t.testId), t);
-        }
-        setLocalCache(CACHE_KEYS.TESTS, INITIAL_TESTS);
-        return INITIAL_TESTS;
+        return await this.seedTests();
       }
       const list = snap.docs.map(d => ({ ...d.data(), testId: d.id } as TestItem));
       setLocalCache(CACHE_KEYS.TESTS, list);
@@ -350,6 +485,44 @@ export const FirestoreDataService = {
     } catch (err) {
       console.warn('Firestore getTests fallback to cache/seed:', err);
       return getLocalCache(CACHE_KEYS.TESTS, INITIAL_TESTS);
+    }
+  },
+
+  async seedTests(): Promise<TestItem[]> {
+    try {
+      for (const t of INITIAL_TESTS) {
+        await setDoc(doc(db, 'tests', t.testId), t, { merge: true });
+      }
+      setLocalCache(CACHE_KEYS.TESTS, INITIAL_TESTS);
+      return INITIAL_TESTS;
+    } catch (e) {
+      console.warn('Seed tests notice:', e);
+      return INITIAL_TESTS;
+    }
+  },
+
+  subscribeTests(callback: (tests: TestItem[]) => void): () => void {
+    try {
+      return onSnapshot(
+        collection(db, 'tests'),
+        (snap) => {
+          if (snap.empty) {
+            this.seedTests().then(callback).catch(() => callback(getLocalCache(CACHE_KEYS.TESTS, INITIAL_TESTS)));
+            return;
+          }
+          const list = snap.docs.map(d => ({ ...d.data(), testId: d.id } as TestItem));
+          setLocalCache(CACHE_KEYS.TESTS, list);
+          callback(list);
+        },
+        (err) => {
+          console.warn('Realtime tests subscription warning:', err);
+          callback(getLocalCache(CACHE_KEYS.TESTS, INITIAL_TESTS));
+        }
+      );
+    } catch (e) {
+      console.warn('subscribeTests fallback:', e);
+      callback(getLocalCache(CACHE_KEYS.TESTS, INITIAL_TESTS));
+      return () => {};
     }
   },
 
@@ -374,7 +547,7 @@ export const FirestoreDataService = {
       targetType: 'class',
       targetClass: newTest.class,
       actionTab: 'tests'
-    });
+    }).catch(e => console.warn('Notification trigger notice:', e));
     return newTest;
   },
 
@@ -414,11 +587,7 @@ export const FirestoreDataService = {
     try {
       const snap = await getDocs(collection(db, 'users'));
       if (snap.empty) {
-        for (const s of INITIAL_STUDENTS) {
-          await setDoc(doc(db, 'users', s.id), s);
-        }
-        setLocalCache(CACHE_KEYS.STUDENTS, INITIAL_STUDENTS);
-        return INITIAL_STUDENTS;
+        return await this.seedStudents();
       }
       const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as User));
       setLocalCache(CACHE_KEYS.STUDENTS, list);
@@ -426,6 +595,44 @@ export const FirestoreDataService = {
     } catch (err) {
       console.warn('Firestore getStudents fallback to cache/seed:', err);
       return getLocalCache(CACHE_KEYS.STUDENTS, INITIAL_STUDENTS);
+    }
+  },
+
+  async seedStudents(): Promise<User[]> {
+    try {
+      for (const s of INITIAL_STUDENTS) {
+        await setDoc(doc(db, 'users', s.id), s, { merge: true });
+      }
+      setLocalCache(CACHE_KEYS.STUDENTS, INITIAL_STUDENTS);
+      return INITIAL_STUDENTS;
+    } catch (e) {
+      console.warn('Seed students notice:', e);
+      return INITIAL_STUDENTS;
+    }
+  },
+
+  subscribeStudents(callback: (students: User[]) => void): () => void {
+    try {
+      return onSnapshot(
+        collection(db, 'users'),
+        (snap) => {
+          if (snap.empty) {
+            this.seedStudents().then(callback).catch(() => callback(getLocalCache(CACHE_KEYS.STUDENTS, INITIAL_STUDENTS)));
+            return;
+          }
+          const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as User));
+          setLocalCache(CACHE_KEYS.STUDENTS, list);
+          callback(list);
+        },
+        (err) => {
+          console.warn('Realtime students subscription warning:', err);
+          callback(getLocalCache(CACHE_KEYS.STUDENTS, INITIAL_STUDENTS));
+        }
+      );
+    } catch (e) {
+      console.warn('subscribeStudents fallback:', e);
+      callback(getLocalCache(CACHE_KEYS.STUDENTS, INITIAL_STUDENTS));
+      return () => {};
     }
   },
 
@@ -459,11 +666,7 @@ export const FirestoreDataService = {
     try {
       const snap = await getDocs(collection(db, 'notifications'));
       if (snap.empty) {
-        for (const n of INITIAL_NOTIFICATIONS) {
-          await setDoc(doc(db, 'notifications', n.notificationId), n);
-        }
-        setLocalCache(CACHE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
-        return INITIAL_NOTIFICATIONS;
+        return await this.seedNotifications();
       }
       const list = snap.docs.map(d => ({ ...d.data(), notificationId: d.id } as NotificationItem));
       list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -472,6 +675,45 @@ export const FirestoreDataService = {
     } catch (err) {
       console.warn('Firestore getNotifications fallback:', err);
       return getLocalCache(CACHE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+    }
+  },
+
+  async seedNotifications(): Promise<NotificationItem[]> {
+    try {
+      for (const n of INITIAL_NOTIFICATIONS) {
+        await setDoc(doc(db, 'notifications', n.notificationId), n, { merge: true });
+      }
+      setLocalCache(CACHE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+      return INITIAL_NOTIFICATIONS;
+    } catch (e) {
+      console.warn('Seed notifications notice:', e);
+      return INITIAL_NOTIFICATIONS;
+    }
+  },
+
+  subscribeNotifications(callback: (notifs: NotificationItem[]) => void): () => void {
+    try {
+      return onSnapshot(
+        collection(db, 'notifications'),
+        (snap) => {
+          if (snap.empty) {
+            this.seedNotifications().then(callback).catch(() => callback(getLocalCache(CACHE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS)));
+            return;
+          }
+          const list = snap.docs.map(d => ({ ...d.data(), notificationId: d.id } as NotificationItem));
+          list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setLocalCache(CACHE_KEYS.NOTIFICATIONS, list);
+          callback(list);
+        },
+        (err) => {
+          console.warn('Realtime notifications subscription warning:', err);
+          callback(getLocalCache(CACHE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS));
+        }
+      );
+    } catch (e) {
+      console.warn('subscribeNotifications fallback:', e);
+      callback(getLocalCache(CACHE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS));
+      return () => {};
     }
   },
 
@@ -562,6 +804,38 @@ export const FirestoreDataService = {
       });
     } catch (err) {
       console.warn('FCM token registration warning:', err);
+    }
+  },
+
+  // Seed all initial content if Firestore database is fresh
+  async seedAllIfEmpty(): Promise<void> {
+    try {
+      const notesSnap = await getDocs(collection(db, 'notes'));
+      if (notesSnap.empty) {
+        await this.seedNotes();
+      }
+      const lecSnap = await getDocs(collection(db, 'lectures'));
+      if (lecSnap.empty) {
+        await this.seedLectures();
+      }
+      const dppSnap = await getDocs(collection(db, 'dpp'));
+      if (dppSnap.empty) {
+        await this.seedDPPs();
+      }
+      const batchSnap = await getDocs(collection(db, 'batches'));
+      if (batchSnap.empty) {
+        await this.seedBatches();
+      }
+      const testSnap = await getDocs(collection(db, 'tests'));
+      if (testSnap.empty) {
+        await this.seedTests();
+      }
+      const notifSnap = await getDocs(collection(db, 'notifications'));
+      if (notifSnap.empty) {
+        await this.seedNotifications();
+      }
+    } catch (e) {
+      console.warn('seedAllIfEmpty notice:', e);
     }
   }
 };

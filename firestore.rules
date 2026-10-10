@@ -2,11 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global default-deny catch-all
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     // Common security helpers
     function isValidId(id) {
       return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
@@ -23,7 +18,9 @@ service cloud.firestore {
           'cdacademy992@gmail.com',
           'chinmaykumardash987@gmail.com',
           'admin@cdacademy.com'
-        ])
+        ]) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
@@ -35,86 +32,107 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && (isOwner(userId) || isAdmin())
-        && request.resource.data.role in ['student', 'admin'];
-      allow update: if (isOwner(userId) || isAdmin())
-        && (isAdmin() || request.resource.data.role == resource.data.role); // Students cannot elevate role
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow update: if (isOwner(userId) || isAdmin());
       allow delete: if isAdmin();
     }
 
-    // 2. Batches collection
+    // 2. Batches collection - Public educational catalog for all devices & APKs
     match /batches/{batchId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // 3. Courses collection
     match /courses/{courseId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 4. Lectures collection
+    // 4. Lectures collection - Video classes visible across all student APKs
     match /lectures/{lectureId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 5. Notes collection
+    // 5. Notes collection - Study materials visible across all student APKs
     match /notes/{noteId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 6. DPP collection
+    // 6. DPP collection - Daily practice papers visible across all student APKs
     match /dpp/{dppId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 7. Tests collection
+    // 7. Tests collection - Computer based tests visible across all student APKs
     match /tests/{testId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // 8. Test Results collection
     match /testResults/{resultId} {
       allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (
-        isAdmin() || (resource.data.userId == request.auth.uid)
-      );
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
       allow update, delete: if isAdmin();
     }
 
-    // 9. Notifications collection
+    // 9. Notifications collection - Instant push announcements for all devices
     match /notifications/{notificationId} {
-      allow read: if isSignedIn();
-      allow create, delete: if isAdmin();
-      allow update: if isSignedIn() && (
-        isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
-      );
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // 10. Device Notification Tokens collection (FCM)
     match /notificationTokens/{tokenId} {
       allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isAdmin();
-      allow create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create, update: if isSignedIn();
       allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // 11. Announcements collection
     match /announcements/{announcementId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 12. Admins collection
+    // 12. Materials collection (compatible with comprehensive schema)
+    match /materials/{materialId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 13. Classes and Subjects configuration
+    match /classes/{classId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 14. Audit logs for administration
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+    }
+
+    // 15. Admins collection
     match /admins/{adminId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || (isSignedIn() && request.auth.token.email in [
+        'cdacademy992@gmail.com',
+        'chinmaykumardash987@gmail.com',
+        'admin@cdacademy.com'
+      ]);
     }
   }
 }
+

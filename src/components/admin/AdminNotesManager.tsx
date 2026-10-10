@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { Note, Subject, ClassLevel } from '../../types';
 import { Plus, Search, Trash2, Edit2, Download, FileText, Check, X, AlertTriangle, Upload, Eye, Video, Youtube, ExternalLink, Play } from 'lucide-react';
@@ -12,7 +13,7 @@ interface AdminNotesManagerProps {
 }
 
 export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewNote, onPreviewVideo }) => {
-  const [notes, setNotes] = useState<Note[]>(() => StorageService.getNotes());
+  const { notes, addNote, updateNote, deleteNote } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterClass, setFilterClass] = useState<string>('All');
   const [filterSubject, setFilterSubject] = useState<string>('All');
@@ -97,7 +98,7 @@ export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewN
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !chapter.trim()) {
       alert('Please fill in title and chapter');
@@ -111,7 +112,7 @@ export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewN
 
     if (editingNote) {
       // Update
-      const updated = StorageService.updateNote(editingNote.id, {
+      await updateNote(editingNote.id, {
         title,
         classLevel,
         subject,
@@ -125,12 +126,9 @@ export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewN
         youtubeVideoUrl: youtubeVideoUrl.trim() || undefined,
         youtubeVideoTitle: youtubeVideoTitle.trim() || (youtubeVideoUrl ? `${title} Video Lecture` : undefined)
       });
-      if (updated) {
-        setNotes(StorageService.getNotes());
-      }
     } else {
       // Create
-      StorageService.addNote({
+      await addNote({
         title,
         classLevel,
         subject,
@@ -146,15 +144,13 @@ export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewN
         youtubeVideoUrl: youtubeVideoUrl.trim() || undefined,
         youtubeVideoTitle: youtubeVideoTitle.trim() || (youtubeVideoUrl ? `${title} Video Lecture` : undefined)
       });
-      setNotes(StorageService.getNotes());
     }
 
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    StorageService.deleteNote(id);
-    setNotes(StorageService.getNotes());
+  const handleDelete = async (id: string) => {
+    await deleteNote(id);
     setDeleteConfirmId(null);
   };
 

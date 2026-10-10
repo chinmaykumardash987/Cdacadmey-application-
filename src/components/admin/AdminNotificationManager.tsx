@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { NotificationItem, Batch } from '../../types';
 import { Bell, Send, Sparkles, Check, Users, BookOpen, Video, FileCheck, Award, MessageSquare } from 'lucide-react';
 
 export const AdminNotificationManager: React.FC = () => {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => StorageService.getNotifications());
-  const batches = StorageService.getBatches();
-  const students = StorageService.getStudents();
+  const { notifications, batches, students, triggerNotification } = useData();
 
   // Notification Composer Form
   const [title, setTitle] = useState('');
@@ -55,7 +54,7 @@ export const AdminNotificationManager: React.FC = () => {
     if (!title.trim() || !message.trim()) return;
 
     setSending(true);
-    const newNotif = StorageService.addNotification({
+    await triggerNotification({
       title: title.trim(),
       message: message.trim(),
       targetType,
@@ -65,7 +64,6 @@ export const AdminNotificationManager: React.FC = () => {
       actionTab
     });
 
-    setNotifications([newNotif, ...notifications]);
     setSending(false);
     setSentSuccess(true);
     setTimeout(() => setSentSuccess(false), 3000);

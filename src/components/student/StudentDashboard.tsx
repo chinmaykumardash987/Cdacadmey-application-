@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { ActiveTab, ClassLevel, Subject } from '../../types';
 import {
@@ -49,14 +50,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onOpenVideo
 }) => {
   const { user, selectedClass, setSelectedClass, requestNotificationPermission } = useAuth();
+  const { notes: allNotes, lectures: allLectures, dpps: allDPPs, notifications, isRealtimeActive, isOnline } = useData();
   const [viewMode, setViewMode] = useState<'icon' | 'card'>('icon');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [showApkModal, setShowApkModal] = useState(false);
   const [dismissNotifBanner, setDismissNotifBanner] = useState(false);
-
-  const allNotes = StorageService.getNotes();
-  const allLectures = StorageService.getLectures();
-  const allDPPs = StorageService.getDPPs();
 
   const filteredNotes = allNotes.filter(n => n.classLevel === selectedClass);
   const filteredLectures = allLectures.filter(l => l.classLevel === selectedClass);
@@ -561,6 +559,61 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           })}
         </div>
       </div>
+
+      {/* Latest Announcements direct from Admin Realtime Cloud */}
+      {notifications && notifications.length > 0 && (
+        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                <Bell className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                  Latest Announcements & Notices
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Live updates direct from CD ACADEMY administration
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Broadcast
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {notifications.slice(0, 2).map((notif) => (
+              <div
+                key={notif.notificationId}
+                className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-amber-300 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-black uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
+                      Notice
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      {new Date(notif.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-sm text-slate-900">{notif.title}</h4>
+                  <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{notif.message}</p>
+                </div>
+                {notif.actionTab && (
+                  <button
+                    onClick={() => notif.actionTab && onNavigateTab(notif.actionTab as ActiveTab)}
+                    className="shrink-0 self-start sm:self-center px-3.5 py-1.5 bg-slate-900 hover:bg-red-600 text-white font-bold text-xs rounded-xl transition"
+                  >
+                    Open {notif.actionTab} →
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 4. FEATURED LECTURE & LATEST NOTES SHOWCASE */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

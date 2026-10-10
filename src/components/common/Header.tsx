@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { CdAcademyLogo } from './CdAcademyLogo';
 import { LogOut, User as UserIcon, Shield, Bell, Check, ChevronDown, Sparkles, Smartphone, Download, CheckCheck } from 'lucide-react';
 import { ClassLevel, ActiveTab, NotificationItem } from '../../types';
@@ -18,15 +19,11 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdmin
 }) => {
   const { user, selectedClass, setSelectedClass, logout, isAdmin, requestNotificationPermission } = useAuth();
+  const { notifications, markAllNotificationsAsRead, markNotificationAsRead } = useData();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showClassDropdown, setShowClassDropdown] = useState(false);
   const [showApkModal, setShowApkModal] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => StorageService.getNotifications());
   const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
-
-  useEffect(() => {
-    setNotifications(StorageService.getNotifications());
-  }, [showNotifications]);
 
   // Relevant notifications for current user
   const relevantNotifications = notifications.filter(n => {
@@ -44,15 +41,13 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleMarkAllRead = () => {
     if (user?.id) {
-      StorageService.markAllNotificationsAsRead(user.id);
-      setNotifications(StorageService.getNotifications());
+      markAllNotificationsAsRead(user.id);
     }
   };
 
   const handleNotificationClick = (notif: NotificationItem) => {
     if (user?.id) {
-      StorageService.markNotificationAsRead(notif.notificationId, user.id);
-      setNotifications(StorageService.getNotifications());
+      markNotificationAsRead(notif.notificationId, user.id);
     }
     if (notif.actionTab && onNavigateTab) {
       onNavigateTab(notif.actionTab);

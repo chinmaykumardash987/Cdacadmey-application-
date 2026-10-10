@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { DPP, Subject, ClassLevel } from '../../types';
 import { FileCheck, Search, Download, Eye, CheckCircle2, Award, Calendar, HelpCircle, Youtube } from 'lucide-react';
@@ -14,12 +15,11 @@ const ALL_SUBJECTS: Subject[] = ['Physics', 'Chemistry', 'Mathematics', 'Biology
 
 export const DppSection: React.FC<DppSectionProps> = ({ onOpenPdf, onOpenVideo }) => {
   const { selectedClass, setSelectedClass } = useAuth();
+  const { dpps: allDPPs } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
   const [selectedChapter, setSelectedChapter] = useState<string>('All');
   const [completedDpps, setCompletedDpps] = useState<Record<string, boolean>>({});
-
-  const allDPPs = StorageService.getDPPs();
 
   const classDPPs = useMemo(() => {
     return allDPPs.filter(d => d.classLevel === selectedClass);

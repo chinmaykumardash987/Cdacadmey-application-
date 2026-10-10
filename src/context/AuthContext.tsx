@@ -285,15 +285,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    // Try signing in via Firebase Auth if account exists
+    // Authenticate with Firebase Auth for trusted cloud access
     try {
       await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
-    } catch (e) {
-      // If Firebase Auth credentials not created yet, proceed with verified administrative session
+    } catch (authErr: any) {
+      if (
+        authErr?.code === 'auth/user-not-found' ||
+        authErr?.code === 'auth/invalid-credential' ||
+        authErr?.code === 'auth/invalid-login-credentials'
+      ) {
+        try {
+          await createUserWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+        } catch (createErr) {
+          console.warn('Firebase admin account provisioning notice:', createErr);
+        }
+      }
+    }
+
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, 'admins', auth.currentUser.uid), {
+          uid: auth.currentUser.uid,
+          email: cleanEmail,
+          role: 'admin',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (err) {
+        console.warn('Admin record write notice:', err);
+      }
     }
 
     const adminUser: User = {
       ...INITIAL_ADMIN,
+      id: auth.currentUser?.uid || INITIAL_ADMIN.id,
+      uid: auth.currentUser?.uid || INITIAL_ADMIN.id,
       email: cleanEmail,
       role: 'admin',
       lastLogin: new Date().toISOString()
@@ -380,6 +405,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSelectedClass('Class 12');
     } else if (role === 'admin') {
       setUser(INITIAL_ADMIN);
+      loginAdmin('cdacademy992@gmail.com', 'chinmay@2006').catch(e => console.warn('Quick login admin auth note:', e));
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { DataProvider } from './context/DataContext';
 import { Header } from './components/common/Header';
 import { StudentBottomNav } from './components/common/StudentBottomNav';
 import { StudentDashboard } from './components/student/StudentDashboard';
@@ -185,7 +186,9 @@ function MainAppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <MainAppContent />
+      <DataProvider>
+        <MainAppContent />
+      </DataProvider>
     </AuthProvider>
   );
 }

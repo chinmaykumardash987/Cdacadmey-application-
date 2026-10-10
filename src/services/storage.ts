@@ -37,7 +37,108 @@ export interface FirebaseCustomConfig {
   appId?: string;
 }
 
+const changeListeners = new Set<() => void>();
+
+function notifyChangeListeners() {
+  changeListeners.forEach(listener => {
+    try {
+      listener();
+    } catch (e) {
+      console.warn('Listener invocation error:', e);
+    }
+  });
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('cd_academy_realtime_data_update'));
+  }
+}
+
+let realtimeInitialized = false;
+let cleanupFns: (() => void)[] = [];
+
 export const StorageService = {
+  // Listen for realtime data changes across all components & tabs
+  onDataChange(listener: () => void): () => void {
+    changeListeners.add(listener);
+    return () => {
+      changeListeners.delete(listener);
+    };
+  },
+
+  // Initialize live Firestore synchronization across devices
+  initRealtimeSync(): () => void {
+    if (realtimeInitialized) return () => {};
+    realtimeInitialized = true;
+
+    try {
+      const unsubNotes = FirestoreDataService.subscribeNotes(notes => {
+        if (notes && notes.length > 0) {
+          localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+          notifyChangeListeners();
+        }
+      });
+      cleanupFns.push(unsubNotes);
+
+      const unsubLectures = FirestoreDataService.subscribeLectures(lectures => {
+        if (lectures && lectures.length > 0) {
+          localStorage.setItem(LECTURES_KEY, JSON.stringify(lectures));
+          notifyChangeListeners();
+        }
+      });
+      cleanupFns.push(unsubLectures);
+
+      const unsubDPPs = FirestoreDataService.subscribeDPPs(dpps => {
+        if (dpps && dpps.length > 0) {
+          localStorage.setItem(DPPS_KEY, JSON.stringify(dpps));
+          notifyChangeListeners();
+        }
+      });
+      cleanupFns.push(unsubDPPs);
+
+      const unsubBatches = FirestoreDataService.subscribeBatches(batches => {
+        if (batches && batches.length > 0) {
+          localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
+          notifyChangeListeners();
+        }
+      });
+      cleanupFns.push(unsubBatches);
+
+      const unsubTests = FirestoreDataService.subscribeTests(tests => {
+        if (tests && tests.length > 0) {
+          localStorage.setItem(TESTS_KEY, JSON.stringify(tests));
+          notifyChangeListeners();
+        }
+      });
+      cleanupFns.push(unsubTests);
+
+      const unsubNotifs = FirestoreDataService.subscribeNotifications(notifs => {
+        if (notifs && notifs.length > 0) {
+          localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifs));
+          notifyChangeListeners();
+        }
+      });
+      cleanupFns.push(unsubNotifs);
+
+      const unsubStudents = FirestoreDataService.subscribeStudents(students => {
+        if (students && students.length > 0) {
+          localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+          notifyChangeListeners();
+        }
+      });
+      cleanupFns.push(unsubStudents);
+
+      // Perform initial check/seed if needed
+      FirestoreDataService.seedAllIfEmpty().catch(e => console.warn('Seed all notice:', e));
+    } catch (err) {
+      console.warn('Realtime sync setup warning:', err);
+    }
+
+    return () => {
+      cleanupFns.forEach(fn => fn());
+      cleanupFns = [];
+      realtimeInitialized = false;
+    };
+  },
+
   // NOTES
   getNotes(): Note[] {
     try {
@@ -54,19 +155,23 @@ export const StorageService = {
 
   saveNotes(notes: Note[]): void {
     localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+    notifyChangeListeners();
   },
 
   addNote(noteData: Omit<Note, 'id' | 'createdAt'>): Note {
     const notes = this.getNotes();
+    const id = `note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newNote: Note = {
       ...noteData,
-      id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      createdAt: new Date().toISOString()
+      id,
+      noteId: id,
+      createdAt: new Date().toISOString(),
+      uploadedAt: new Date().toISOString()
     };
     const updated = [newNote, ...notes];
     this.saveNotes(updated);
-    // Background sync to Firestore
-    FirestoreDataService.addNote(noteData).catch(e => console.warn('Firestore note sync:', e));
+    // Write directly to cloud Firestore to broadcast to all devices
+    FirestoreDataService.addNote(noteData).catch(e => console.warn('Firestore note broadcast:', e));
     return newNote;
   },
 
@@ -77,7 +182,8 @@ export const StorageService = {
     const updatedNote = { ...notes[index], ...updates };
     notes[index] = updatedNote;
     this.saveNotes(notes);
-    FirestoreDataService.updateNote(id, updates).catch(e => console.warn('Firestore note update:', e));
+    // Write to cloud Firestore
+    FirestoreDataService.updateNote(id, updates).catch(e => console.warn('Firestore note update broadcast:', e));
     return updatedNote;
   },
 
@@ -86,7 +192,8 @@ export const StorageService = {
     const filtered = notes.filter(n => n.id !== id);
     if (filtered.length === notes.length) return false;
     this.saveNotes(filtered);
-    FirestoreDataService.deleteNote(id).catch(e => console.warn('Firestore note delete:', e));
+    // Remove from cloud Firestore
+    FirestoreDataService.deleteNote(id).catch(e => console.warn('Firestore note delete broadcast:', e));
     return true;
   },
 
@@ -106,18 +213,23 @@ export const StorageService = {
 
   saveLectures(lectures: Lecture[]): void {
     localStorage.setItem(LECTURES_KEY, JSON.stringify(lectures));
+    notifyChangeListeners();
   },
 
   addLecture(lectureData: Omit<Lecture, 'id' | 'createdAt'>): Lecture {
     const lectures = this.getLectures();
+    const id = `lec-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newLecture: Lecture = {
       ...lectureData,
-      id: `lec-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      createdAt: new Date().toISOString()
+      id,
+      lectureId: id,
+      createdAt: new Date().toISOString(),
+      uploadedAt: new Date().toISOString()
     };
     const updated = [newLecture, ...lectures];
     this.saveLectures(updated);
-    FirestoreDataService.addLecture(lectureData).catch(e => console.warn('Firestore lecture sync:', e));
+    // Write directly to cloud Firestore
+    FirestoreDataService.addLecture(lectureData).catch(e => console.warn('Firestore lecture broadcast:', e));
     return newLecture;
   },
 
@@ -128,7 +240,7 @@ export const StorageService = {
     const updated = { ...lectures[index], ...updates };
     lectures[index] = updated;
     this.saveLectures(lectures);
-    FirestoreDataService.updateLecture(id, updates).catch(e => console.warn('Firestore lecture update:', e));
+    FirestoreDataService.updateLecture(id, updates).catch(e => console.warn('Firestore lecture update broadcast:', e));
     return updated;
   },
 
@@ -137,7 +249,7 @@ export const StorageService = {
     const filtered = lectures.filter(l => l.id !== id);
     if (filtered.length === lectures.length) return false;
     this.saveLectures(filtered);
-    FirestoreDataService.deleteLecture(id).catch(e => console.warn('Firestore lecture delete:', e));
+    FirestoreDataService.deleteLecture(id).catch(e => console.warn('Firestore lecture delete broadcast:', e));
     return true;
   },
 
@@ -157,18 +269,21 @@ export const StorageService = {
 
   saveDPPs(dpps: DPP[]): void {
     localStorage.setItem(DPPS_KEY, JSON.stringify(dpps));
+    notifyChangeListeners();
   },
 
   addDPP(dppData: Omit<DPP, 'id' | 'createdAt'>): DPP {
     const dpps = this.getDPPs();
+    const id = `dpp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newDPP: DPP = {
       ...dppData,
-      id: `dpp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id,
+      dppId: id,
       createdAt: new Date().toISOString()
     };
     const updated = [newDPP, ...dpps];
     this.saveDPPs(updated);
-    FirestoreDataService.addDPP(dppData).catch(e => console.warn('Firestore dpp sync:', e));
+    FirestoreDataService.addDPP(dppData).catch(e => console.warn('Firestore dpp broadcast:', e));
     return newDPP;
   },
 
@@ -179,7 +294,7 @@ export const StorageService = {
     const updated = { ...dpps[index], ...updates };
     dpps[index] = updated;
     this.saveDPPs(dpps);
-    FirestoreDataService.updateDPP(id, updates).catch(e => console.warn('Firestore dpp update:', e));
+    FirestoreDataService.updateDPP(id, updates).catch(e => console.warn('Firestore dpp update broadcast:', e));
     return updated;
   },
 
@@ -188,7 +303,7 @@ export const StorageService = {
     const filtered = dpps.filter(d => d.id !== id);
     if (filtered.length === dpps.length) return false;
     this.saveDPPs(filtered);
-    FirestoreDataService.deleteDPP(id).catch(e => console.warn('Firestore dpp delete:', e));
+    FirestoreDataService.deleteDPP(id).catch(e => console.warn('Firestore dpp delete broadcast:', e));
     return true;
   },
 
@@ -208,6 +323,7 @@ export const StorageService = {
 
   saveStudents(students: User[]): void {
     localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+    notifyChangeListeners();
   },
 
   addStudent(student: User): void {
@@ -252,19 +368,32 @@ export const StorageService = {
 
   saveBatches(batches: Batch[]): void {
     localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
+    notifyChangeListeners();
   },
 
   addBatch(batchData: Omit<Batch, 'batchId' | 'createdAt'>): Batch {
     const batches = this.getBatches();
+    const batchId = `batch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newBatch: Batch = {
       ...batchData,
-      batchId: `batch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      batchId,
       createdAt: new Date().toISOString()
     };
     const updated = [newBatch, ...batches];
     this.saveBatches(updated);
-    FirestoreDataService.addBatch(batchData).catch(e => console.warn('Firestore batch sync:', e));
+    FirestoreDataService.addBatch(batchData).catch(e => console.warn('Firestore batch broadcast:', e));
     return newBatch;
+  },
+
+  updateBatch(batchId: string, updates: Partial<Batch>): Batch | null {
+    const batches = this.getBatches();
+    const index = batches.findIndex(b => b.batchId === batchId);
+    if (index === -1) return null;
+    const updated = { ...batches[index], ...updates };
+    batches[index] = updated;
+    this.saveBatches(batches);
+    FirestoreDataService.updateBatch(batchId, updates).catch(e => console.warn('Firestore batch update broadcast:', e));
+    return updated;
   },
 
   deleteBatch(batchId: string): boolean {
@@ -272,7 +401,7 @@ export const StorageService = {
     const filtered = batches.filter(b => b.batchId !== batchId);
     if (filtered.length === batches.length) return false;
     this.saveBatches(filtered);
-    FirestoreDataService.deleteBatch(batchId).catch(e => console.warn('Firestore batch delete:', e));
+    FirestoreDataService.deleteBatch(batchId).catch(e => console.warn('Firestore batch delete broadcast:', e));
     return true;
   },
 
@@ -292,18 +421,20 @@ export const StorageService = {
 
   saveTests(tests: TestItem[]): void {
     localStorage.setItem(TESTS_KEY, JSON.stringify(tests));
+    notifyChangeListeners();
   },
 
   addTest(testData: Omit<TestItem, 'testId' | 'createdAt'>): TestItem {
     const tests = this.getTests();
+    const testId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newTest: TestItem = {
       ...testData,
-      testId: `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      testId,
       createdAt: new Date().toISOString()
     };
     const updated = [newTest, ...tests];
     this.saveTests(updated);
-    FirestoreDataService.addTest(testData).catch(e => console.warn('Firestore test sync:', e));
+    FirestoreDataService.addTest(testData).catch(e => console.warn('Firestore test broadcast:', e));
     return newTest;
   },
 
@@ -323,20 +454,31 @@ export const StorageService = {
 
   saveNotifications(notifs: NotificationItem[]): void {
     localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifs));
+    notifyChangeListeners();
   },
 
-  addNotification(notifData: Parameters<typeof FirestoreDataService.triggerNotification>[0]): NotificationItem {
+  addNotification(data: {
+    title: string;
+    message: string;
+    targetType: 'all' | 'class' | 'batch' | 'student';
+    targetClass?: string;
+    targetBatch?: string;
+    targetStudentId?: string;
+    actionTab?: any;
+    imageURL?: string;
+  }): NotificationItem {
     const notifs = this.getNotifications();
+    const id = `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newNotif: NotificationItem = {
-      ...notifData,
-      notificationId: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      ...data,
+      notificationId: id,
       createdAt: new Date().toISOString(),
       isActive: true,
       readBy: []
     };
     const updated = [newNotif, ...notifs];
     this.saveNotifications(updated);
-    FirestoreDataService.triggerNotification(notifData).catch(e => console.warn('Firestore notif sync:', e));
+    FirestoreDataService.triggerNotification(data).catch(e => console.warn('Firestore notif broadcast:', e));
     return newNotif;
   },
 
@@ -377,7 +519,7 @@ export const StorageService = {
     localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(config));
   },
 
-  // LIVE FIRESTORE BACKGROUND SYNC
+  // LIVE FIRESTORE SYNC
   async syncFromFirestore(): Promise<void> {
     try {
       const [notes, lectures, dpps, batches, tests, notifs, students] = await Promise.all([
@@ -409,5 +551,6 @@ export const StorageService = {
     localStorage.setItem(BATCHES_KEY, JSON.stringify(INITIAL_BATCHES));
     localStorage.setItem(TESTS_KEY, JSON.stringify(INITIAL_TESTS));
     localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
+    notifyChangeListeners();
   }
 };
