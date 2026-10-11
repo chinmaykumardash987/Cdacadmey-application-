@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { X, Smartphone, Download, Check, ShieldCheck, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
+import { X, Smartphone, Download, Check, ShieldCheck, Sparkles, CheckCircle2, ChevronRight, RefreshCw } from 'lucide-react';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
+import { CdAcademyLogo } from './CdAcademyLogo';
 
 interface ApkDownloadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onReplayWelcomeSplash?: () => void;
 }
 
-export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onClose }) => {
+export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onClose, onReplayWelcomeSplash }) => {
   const { isInstallable, isInstalled, install, isAndroid } = usePWAInstall();
   const [installing, setInstalling] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
 
   if (!isOpen) return null;
 
@@ -24,19 +28,35 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onCl
   };
 
   const handleDirectApkDownload = async () => {
-    // If the browser supports direct install prompt, trigger it immediately
     if (isInstallable) {
       await handleNativeInstall();
       return;
     }
 
     setInstalling(true);
-    // Instant simulated direct package download notification
     setTimeout(() => {
       setInstalling(false);
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 4000);
     }, 1000);
+  };
+
+  const handleForceUpdateApp = async () => {
+    setUpdating(true);
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          await reg.update();
+        }
+      }
+      setUpdateSuccess(true);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } catch {
+      window.location.reload();
+    }
   };
 
   return (
@@ -50,36 +70,56 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onCl
           <X className="w-5 h-5" />
         </button>
 
-        {/* Modal Header */}
+        {/* Modal Header with Logo Badge */}
         <div className="flex items-center gap-3.5 mb-5">
-          <div className="w-13 h-13 rounded-2xl bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-600/30 shrink-0">
-            <Smartphone className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-2xl bg-[#0b0f19] p-1 text-white flex items-center justify-center shadow-lg shadow-red-600/20 shrink-0 border border-slate-700">
+            <CdAcademyLogo variant="iconOnly" size="sm" />
           </div>
           <div>
-            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200">
-              <Sparkles className="w-3 h-3" />
-              <span>Android App (.APK)</span>
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200">
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              <span>Official Android App (.APK)</span>
             </div>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-              Direct Download APK into Android
+            <h2 className="text-xl font-black text-slate-900 tracking-tight mt-0.5">
+              CD ACADEMY Android App
             </h2>
           </div>
         </div>
 
-        {/* Guaranteed 100% Fix for Parse Error */}
-        <div className="mb-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 flex items-start gap-3">
-          <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-          <div>
-            <strong className="block font-bold text-emerald-900 mb-0.5">
-              Zero Parse Error • Direct Android Installation
-            </strong>
-            <span className="text-emerald-800 leading-relaxed">
-              To avoid the Android <em>"There was a problem parsing the package"</em> error, tap <strong>Direct Install & Download</strong> below. Android verifies and installs the app straight onto your phone.
-            </span>
+        {/* Update Notice for All Downloaded Devices */}
+        <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-red-50/50 to-emerald-50/50 border border-amber-200 text-xs text-slate-800 space-y-2">
+          <div className="flex items-center gap-2 font-black text-slate-900">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Updated with Official Logo & Welcome Animation</span>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-relaxed">
+            All downloaded devices receive the new authentic CD ACADEMY logo splash screen and animated welcome experience automatically.
+          </p>
+          <div className="pt-1 flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleForceUpdateApp}
+              disabled={updating}
+              className="px-3 py-1.5 bg-slate-900 hover:bg-red-600 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${updating ? 'animate-spin' : ''}`} />
+              <span>{updating ? 'Updating App...' : updateSuccess ? 'Updated! Reloading...' : 'Update on This Device'}</span>
+            </button>
+            {onReplayWelcomeSplash && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onReplayWelcomeSplash();
+                }}
+                className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 shadow-2xs flex items-center gap-1"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Preview Welcome Animation</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Primary Action: Direct Download & Install into Android */}
+        {/* Primary Action: Direct Install & Download into Android */}
         <div className="p-4 rounded-2xl bg-gradient-to-br from-red-50 via-white to-red-50/40 border-2 border-red-200 shadow-xs mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-extrabold uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded-md">
@@ -94,7 +134,7 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onCl
             Direct Install into Android Phone
           </h3>
           <p className="text-xs text-slate-600 mb-3.5 leading-relaxed">
-            Installs the complete CD ACADEMY educational app with Class 11 & 12 notes, lectures, DPPs, and offline access directly onto your Android home screen.
+            Installs the complete CD ACADEMY educational app with Class 11 & 12 notes, lectures, DPPs, and offline access directly onto your Android home screen with the official CD ACADEMY icon.
           </p>
 
           {isInstalled ? (
@@ -151,20 +191,20 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onCl
         <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-700 space-y-2">
           <div className="font-bold text-slate-900 flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-red-600" />
-            <span>How to Install on Android in 2 Taps:</span>
+            <span>How to Update on Android Devices:</span>
           </div>
           <div className="space-y-1.5 text-[11px] text-slate-600">
             <div className="flex items-start gap-2">
               <span className="w-4 h-4 rounded-full bg-red-100 text-red-700 font-bold flex items-center justify-center shrink-0 text-[10px]">1</span>
-              <span>Tap the red <strong>"Direct Download & Install into Android"</strong> button above.</span>
+              <span>Open the app while connected to Wi-Fi or mobile internet.</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="w-4 h-4 rounded-full bg-red-100 text-red-700 font-bold flex items-center justify-center shrink-0 text-[10px]">2</span>
-              <span>Or tap Chrome's menu (<strong>⋮</strong>) at top-right &rarr; tap <strong>"Install App"</strong>.</span>
+              <span>Android automatically updates the WebAPK splash screen and app icon in the background.</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="w-4 h-4 rounded-full bg-red-100 text-red-700 font-bold flex items-center justify-center shrink-0 text-[10px]">3</span>
-              <span>Tap <strong>"Install"</strong> — CD ACADEMY opens instantly as a native app on your home screen!</span>
+              <span>You can also tap <strong>"Update on This Device"</strong> above to immediately reload with the newest CD ACADEMY build!</span>
             </div>
           </div>
         </div>

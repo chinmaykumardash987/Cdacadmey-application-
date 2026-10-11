@@ -18,17 +18,17 @@ export default defineConfig(() => {
           short_name: 'CD Academy',
           description: 'Comprehensive educational learning workspace for Class 11 & 12 students featuring notes, video lectures, DPPs, and CBT tests.',
           theme_color: '#dc2626',
-          background_color: '#0f172a',
+          background_color: '#0b0f19',
           display: 'standalone',
           orientation: 'portrait',
           start_url: '/',
           scope: '/',
           icons: [
             {
-              src: '/icon-192.png',
-              sizes: '192x192',
+              src: '/icon-maskable-512.png',
+              sizes: '512x512',
               type: 'image/png',
-              purpose: 'any'
+              purpose: 'maskable'
             },
             {
               src: '/icon-512.png',
@@ -37,20 +37,26 @@ export default defineConfig(() => {
               purpose: 'any'
             },
             {
-              src: '/icon-maskable-512.png',
-              sizes: '512x512',
+              src: '/icon-192.png',
+              sizes: '192x192',
               type: 'image/png',
-              purpose: 'maskable'
+              purpose: 'any'
             },
             {
-              src: '/icon-192.svg',
-              sizes: '192x192',
+              src: '/icon-maskable-512.svg',
+              sizes: '512x512',
               type: 'image/svg+xml',
-              purpose: 'any'
+              purpose: 'maskable'
             },
             {
               src: '/icon-512.svg',
               sizes: '512x512',
+              type: 'image/svg+xml',
+              purpose: 'any'
+            },
+            {
+              src: '/icon.svg',
+              sizes: '192x192',
               type: 'image/svg+xml',
               purpose: 'any'
             }

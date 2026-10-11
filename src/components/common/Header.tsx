@@ -11,12 +11,14 @@ interface HeaderProps {
   activeTab?: ActiveTab;
   onNavigateTab?: (tab: ActiveTab) => void;
   onOpenAdmin?: () => void;
+  onReplayWelcomeSplash?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab = 'dashboard',
   onNavigateTab,
-  onOpenAdmin
+  onOpenAdmin,
+  onReplayWelcomeSplash
 }) => {
   const { user, selectedClass, setSelectedClass, logout, isAdmin, requestNotificationPermission } = useAuth();
   const { notifications, markAllNotificationsAsRead, markNotificationAsRead, savedCount } = useData();
@@ -298,6 +300,7 @@ export const Header: React.FC<HeaderProps> = ({
       <ApkDownloadModal
         isOpen={showApkModal}
         onClose={() => setShowApkModal(false)}
+        onReplayWelcomeSplash={onReplayWelcomeSplash}
       />
     </header>
   );

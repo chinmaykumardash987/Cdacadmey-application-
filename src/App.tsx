@@ -15,6 +15,7 @@ import { AdminLoginPage } from './components/auth/AdminLoginPage';
 import { AdminPanel } from './components/admin/AdminPanel';
 import { PdfViewerModal } from './components/common/PdfViewerModal';
 import { VideoModal } from './components/common/VideoModal';
+import { WelcomeSplashScreen } from './components/common/WelcomeSplashScreen';
 import { ActiveTab, Note, Lecture, DPP } from './types';
 
 type AuthView = 'login' | 'signup' | 'adminLogin';
@@ -24,6 +25,9 @@ function MainAppContent() {
   const [authView, setAuthView] = useState<AuthView>('login');
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [adminViewActive, setAdminViewActive] = useState(false);
+  const [showWelcomeSplash, setShowWelcomeSplash] = useState(() => {
+    return !sessionStorage.getItem('cd_academy_welcome_shown');
+  });
 
   // Automatically open Admin Panel when admin signs in
   React.useEffect(() => {
@@ -35,6 +39,18 @@ function MainAppContent() {
   // Active Modals
   const [activePdfNote, setActivePdfNote] = useState<Note | null>(null);
   const [activeVideoLecture, setActiveVideoLecture] = useState<Lecture | null>(null);
+
+  // 0. Show attractive Welcome Splash Animation Screen on app startup
+  if (showWelcomeSplash) {
+    return (
+      <WelcomeSplashScreen
+        onFinish={() => {
+          sessionStorage.setItem('cd_academy_welcome_shown', 'true');
+          setShowWelcomeSplash(false);
+        }}
+      />
+    );
+  }
 
   // 1. If not logged in, render appropriate Auth Page
   if (!user) {
@@ -72,6 +88,7 @@ function MainAppContent() {
         activeTab={activeTab}
         onNavigateTab={setActiveTab}
         onOpenAdmin={() => setAdminViewActive(true)}
+        onReplayWelcomeSplash={() => setShowWelcomeSplash(true)}
       />
 
       {/* Main Student Screen Content */}
@@ -129,6 +146,7 @@ function MainAppContent() {
             onOpenPdf={setActivePdfNote}
             onOpenVideo={setActiveVideoLecture}
             onNavigateTab={setActiveTab}
+            onReplayWelcomeSplash={() => setShowWelcomeSplash(true)}
           />
         )}
       </main>
