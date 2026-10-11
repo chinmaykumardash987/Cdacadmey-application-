@@ -32,6 +32,7 @@ export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPr
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [duration, setDuration] = useState('45:00 min');
 
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const filteredLectures = useMemo(() => {
@@ -50,6 +51,7 @@ export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPr
 
   const handleOpenAddModal = () => {
     setEditingLecture(null);
+    setFormError(null);
     setTitle('');
     setClassLevel('Class 11');
     setSubject('Physics');
@@ -64,6 +66,7 @@ export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPr
 
   const handleOpenEditModal = (lec: Lecture) => {
     setEditingLecture(lec);
+    setFormError(null);
     setTitle(lec.title);
     setClassLevel(lec.classLevel);
     setSubject(lec.subject);
@@ -87,9 +90,10 @@ export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !chapter.trim() || !videoUrl.trim()) {
-      alert('Please fill in lecture title, chapter and video URL');
+      setFormError('Please fill in lecture title, chapter and video URL.');
       return;
     }
+    setFormError(null);
 
     if (editingLecture) {
       await updateLecture(editingLecture.id, {
@@ -287,6 +291,12 @@ export const AdminLecturesManager: React.FC<AdminLecturesManagerProps> = ({ onPr
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+              {formError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
               <div>
                 <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Lecture Title *

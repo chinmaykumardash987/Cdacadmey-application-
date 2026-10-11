@@ -554,6 +554,16 @@ export const FirestoreDataService = {
     return newTest;
   },
 
+  async deleteTest(testId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'tests', testId));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `tests/${testId}`);
+    }
+    const current = getLocalCache<TestItem[]>(CACHE_KEYS.TESTS, INITIAL_TESTS);
+    setLocalCache(CACHE_KEYS.TESTS, current.filter(t => t.testId !== testId));
+  },
+
   async submitTestResult(resultData: Omit<TestResultItem, 'resultId' | 'submittedAt'>): Promise<TestResultItem> {
     const resultId = `res-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newResult: TestResultItem = {

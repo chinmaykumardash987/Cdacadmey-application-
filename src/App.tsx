@@ -26,8 +26,34 @@ function MainAppContent() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [adminViewActive, setAdminViewActive] = useState(false);
   const [showWelcomeSplash, setShowWelcomeSplash] = useState(() => {
-    return !sessionStorage.getItem('cd_academy_welcome_shown');
+    try {
+      const seenLocal = localStorage.getItem('cd_academy_welcome_shown_v2');
+      const seenSession = sessionStorage.getItem('cd_academy_welcome_shown');
+      return !seenLocal && !seenSession;
+    } catch {
+      return false;
+    }
   });
+
+  const handleFinishWelcomeSplash = React.useCallback(() => {
+    try {
+      localStorage.setItem('cd_academy_welcome_shown_v2', 'true');
+      sessionStorage.setItem('cd_academy_welcome_shown', 'true');
+    } catch (e) {
+      console.warn('storage note:', e);
+    }
+    setShowWelcomeSplash(false);
+  }, []);
+
+  // Hard safety timeout: guarantee splash never stays open longer than 1.5s
+  React.useEffect(() => {
+    if (showWelcomeSplash) {
+      const safety = setTimeout(() => {
+        handleFinishWelcomeSplash();
+      }, 1500);
+      return () => clearTimeout(safety);
+    }
+  }, [showWelcomeSplash, handleFinishWelcomeSplash]);
 
   // Automatically open Admin Panel when admin signs in
   React.useEffect(() => {
@@ -40,49 +66,52 @@ function MainAppContent() {
   const [activePdfNote, setActivePdfNote] = useState<Note | null>(null);
   const [activeVideoLecture, setActiveVideoLecture] = useState<Lecture | null>(null);
 
-  // 0. Show attractive Welcome Splash Animation Screen on app startup
-  if (showWelcomeSplash) {
-    return (
-      <WelcomeSplashScreen
-        onFinish={() => {
-          sessionStorage.setItem('cd_academy_welcome_shown', 'true');
-          setShowWelcomeSplash(false);
-        }}
-      />
-    );
-  }
-
   // 1. If not logged in, render appropriate Auth Page
   if (!user) {
-    if (authView === 'signup') {
-      return <SignUpPage onGoToLogin={() => setAuthView('login')} />;
-    }
-    if (authView === 'adminLogin') {
-      return <AdminLoginPage onBackToStudentPortal={() => setAuthView('login')} />;
-    }
     return (
-      <LoginPage
-        onGoToSignUp={() => setAuthView('signup')}
-        onGoToAdminLogin={() => setAuthView('adminLogin')}
-      />
+      <>
+        {showWelcomeSplash && (
+          <WelcomeSplashScreen onFinish={handleFinishWelcomeSplash} />
+        )}
+        {authView === 'signup' && (
+          <SignUpPage onGoToLogin={() => setAuthView('login')} />
+        )}
+        {authView === 'adminLogin' && (
+          <AdminLoginPage onBackToStudentPortal={() => setAuthView('login')} />
+        )}
+        {authView === 'login' && (
+          <LoginPage
+            onGoToSignUp={() => setAuthView('signup')}
+            onGoToAdminLogin={() => setAuthView('adminLogin')}
+          />
+        )}
+      </>
     );
   }
 
   // 2. If user is Admin and in Admin View mode, render Admin Panel
   if (isAdmin && (adminViewActive || !activeTab)) {
     return (
-      <AdminPanel
-        onSwitchToStudentView={() => {
-          setAdminViewActive(false);
-          setActiveTab('dashboard');
-        }}
-      />
+      <>
+        {showWelcomeSplash && (
+          <WelcomeSplashScreen onFinish={handleFinishWelcomeSplash} />
+        )}
+        <AdminPanel
+          onSwitchToStudentView={() => {
+            setAdminViewActive(false);
+            setActiveTab('dashboard');
+          }}
+        />
+      </>
     );
   }
 
   // 3. Otherwise render Student Learning Workspace
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col antialiased">
+      {showWelcomeSplash && (
+        <WelcomeSplashScreen onFinish={handleFinishWelcomeSplash} />
+      )}
       {/* Top Header */}
       <Header
         activeTab={activeTab}

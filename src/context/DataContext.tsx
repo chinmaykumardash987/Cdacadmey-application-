@@ -47,6 +47,7 @@ interface DataContextType {
   updateBatch: (id: string, updates: Partial<Batch>) => Promise<void>;
   deleteBatch: (id: string) => Promise<void>;
   addTest: (testData: Omit<TestItem, 'testId' | 'createdAt'>) => Promise<TestItem>;
+  deleteTest: (testId: string) => Promise<void>;
   submitTestResult: (resultData: Omit<TestResultItem, 'resultId' | 'submittedAt'>) => Promise<TestResultItem>;
   triggerNotification: (data: {
     title: string;
@@ -279,6 +280,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return created;
   };
 
+  const deleteTest = async (testId: string): Promise<void> => {
+    StorageService.deleteTest(testId);
+    syncStateFromStorage();
+  };
+
   const submitTestResult = async (resultData: Omit<TestResultItem, 'resultId' | 'submittedAt'>): Promise<TestResultItem> => {
     const res = await FirestoreDataService.submitTestResult(resultData);
     syncStateFromStorage();
@@ -348,6 +354,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateBatch,
         deleteBatch,
         addTest,
+        deleteTest,
         submitTestResult,
         triggerNotification,
         markNotificationAsRead,

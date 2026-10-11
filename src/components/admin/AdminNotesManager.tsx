@@ -36,6 +36,9 @@ export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewN
   const [youtubeVideoUrl, setYoutubeVideoUrl] = useState('');
   const [youtubeVideoTitle, setYoutubeVideoTitle] = useState('');
 
+  // Form Error state
+  const [formError, setFormError] = useState<string | null>(null);
+
   // Delete confirmation modal
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -55,6 +58,7 @@ export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewN
 
   const handleOpenAddModal = () => {
     setEditingNote(null);
+    setFormError(null);
     setTitle('');
     setClassLevel('Class 11');
     setSubject('Physics');
@@ -72,6 +76,7 @@ export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewN
 
   const handleOpenEditModal = (note: Note) => {
     setEditingNote(note);
+    setFormError(null);
     setTitle(note.title);
     setClassLevel(note.classLevel);
     setSubject(note.subject);
@@ -101,9 +106,10 @@ export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewN
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !chapter.trim()) {
-      alert('Please fill in title and chapter');
+      setFormError('Please fill in both the Note Title and Chapter name.');
       return;
     }
+    setFormError(null);
 
     const parsedTags = tags
       .split(',')
@@ -339,6 +345,12 @@ export const AdminNotesManager: React.FC<AdminNotesManagerProps> = ({ onPreviewN
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+              {formError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
               {/* Title */}
               <div>
                 <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">

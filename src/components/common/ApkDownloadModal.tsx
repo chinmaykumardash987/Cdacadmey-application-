@@ -44,6 +44,12 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onCl
   const handleForceUpdateApp = async () => {
     setUpdating(true);
     try {
+      if ('caches' in window) {
+        try {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        } catch {}
+      }
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.getRegistration();
         if (reg) {
@@ -53,7 +59,7 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onCl
       setUpdateSuccess(true);
       setTimeout(() => {
         window.location.reload();
-      }, 1200);
+      }, 800);
     } catch {
       window.location.reload();
     }

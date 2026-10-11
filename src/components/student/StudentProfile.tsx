@@ -110,7 +110,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
 
   const handleInstallApp = async () => {
     if (!deferredPrompt) {
-      alert('To install CD ACADEMY on your Android phone, tap the browser menu (⋮) and tap "Install app" or "Add to Home screen"!');
+      showToast('To install CD ACADEMY, tap browser menu (⋮) and tap "Install app" or "Add to Home screen"!');
       return;
     }
     deferredPrompt.prompt();

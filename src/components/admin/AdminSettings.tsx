@@ -122,6 +122,43 @@ export const AdminSettings: React.FC = () => {
           </div>
         </div>
 
+        {/* Device Cache & PWA Refresh Tool */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <RefreshCw className="w-4 h-4 text-emerald-600" />
+            <h3 className="font-bold text-sm text-slate-900">Multi-Device Updates & Cache Refresh</h3>
+          </div>
+          <p className="text-xs text-slate-500">
+            Ensure all student phones, WebAPKs, and tablets receive the updated logo and newest curriculum without waiting:
+          </p>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={async () => {
+                if ('caches' in window) {
+                  try {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(k => caches.delete(k)));
+                  } catch {}
+                }
+                if ('serviceWorker' in navigator) {
+                  try {
+                    const reg = await navigator.serviceWorker.getRegistration();
+                    await reg?.update();
+                  } catch {}
+                }
+                setTimeout(() => {
+                  window.location.reload();
+                }, 300);
+              }}
+              className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Force Refresh App Cache on This Device</span>
+            </button>
+          </div>
+        </div>
+
         {/* Action Button */}
         <div className="flex items-center justify-end gap-3">
           {saved && (

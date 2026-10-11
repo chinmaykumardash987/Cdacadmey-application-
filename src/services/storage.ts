@@ -441,6 +441,13 @@ export const StorageService = {
     return newTest;
   },
 
+  deleteTest(testId: string): boolean {
+    const tests = this.getTests().filter(t => t.testId !== testId);
+    this.saveTests(tests);
+    FirestoreDataService.deleteTest(testId).catch(e => console.warn('Firestore test delete:', e));
+    return true;
+  },
+
   // NOTIFICATIONS
   getNotifications(): NotificationItem[] {
     try {

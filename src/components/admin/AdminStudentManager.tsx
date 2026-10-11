@@ -1,14 +1,22 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { StorageService } from '../../services/storage';
+import { useData } from '../../context/DataContext';
 import { User, ClassLevel } from '../../types';
 import { Users, Search, Power, CheckCircle, Ban, Filter, Phone, Mail, Calendar, ShieldAlert, Eye, X, BookOpen, Award, IdCard } from 'lucide-react';
 
 export const AdminStudentManager: React.FC = () => {
-  const [students, setStudents] = useState<User[]>(() => StorageService.getStudents());
+  const { students: contextStudents, refreshData } = useData();
+  const [students, setStudents] = useState<User[]>(() => contextStudents.length > 0 ? contextStudents : StorageService.getStudents());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterClass, setFilterClass] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [inspectStudent, setInspectStudent] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (contextStudents && contextStudents.length > 0) {
+      setStudents(contextStudents);
+    }
+  }, [contextStudents]);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -29,6 +37,7 @@ export const AdminStudentManager: React.FC = () => {
     const updated = StorageService.toggleStudentStatus(id);
     if (updated) {
       setStudents(StorageService.getStudents());
+      refreshData?.();
       if (inspectStudent && inspectStudent.id === id) {
         setInspectStudent(updated);
       }

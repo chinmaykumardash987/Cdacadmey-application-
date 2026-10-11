@@ -9,7 +9,9 @@ export const AdminDeploymentGuide: React.FC = () => {
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   const handleCopyCredentials = () => {
-    navigator.clipboard.writeText('GMail: cdacademy992@gmail.com\nPassword: chinmay@2006');
+    try {
+      navigator.clipboard?.writeText('GMail: cdacademy992@gmail.com\nPassword: chinmay@2006').catch(() => {});
+    } catch {}
     setCopiedCreds(true);
     setTimeout(() => setCopiedCreds(false), 2000);
   };

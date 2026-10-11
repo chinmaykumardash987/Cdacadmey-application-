@@ -34,6 +34,7 @@ export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, 
   const [youtubeVideoUrl, setYoutubeVideoUrl] = useState('');
   const [youtubeVideoTitle, setYoutubeVideoTitle] = useState('');
 
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const filteredDpps = useMemo(() => {
@@ -52,6 +53,7 @@ export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, 
 
   const handleOpenAddModal = () => {
     setEditingDpp(null);
+    setFormError(null);
     setTitle(`DPP #${dpps.length + 1} - `);
     setClassLevel('Class 11');
     setSubject('Physics');
@@ -67,6 +69,7 @@ export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, 
 
   const handleOpenEditModal = (dpp: DPP) => {
     setEditingDpp(dpp);
+    setFormError(null);
     setTitle(dpp.title);
     setClassLevel(dpp.classLevel);
     setSubject(dpp.subject);
@@ -91,9 +94,10 @@ export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !chapter.trim()) {
-      alert('Please fill in title and chapter');
+      setFormError('Please fill in both the DPP Title and Chapter name.');
       return;
     }
+    setFormError(null);
 
     if (editingDpp) {
       await updateDPP(editingDpp.id, {
@@ -318,6 +322,12 @@ export const AdminDppManager: React.FC<AdminDppManagerProps> = ({ onPreviewDpp, 
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+              {formError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
               <div>
                 <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   DPP Title *
