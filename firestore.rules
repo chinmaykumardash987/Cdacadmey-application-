@@ -124,7 +124,18 @@ service cloud.firestore {
       allow create: if isSignedIn();
     }
 
-    // 15. Admins collection
+    // 15. Bookmarks collection for saved notes and lectures
+    match /bookmarks/{bookmarkId} {
+      allow get, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /users/{userId}/bookmarks/{bookmarkId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // 16. Admins collection
     match /admins/{adminId} {
       allow read: if isSignedIn();
       allow write: if isAdmin() || (isSignedIn() && request.auth.token.email in [

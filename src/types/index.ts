@@ -195,6 +195,31 @@ export interface TestSeries {
 
 export type ActiveTab = 'dashboard' | 'notes' | 'lectures' | 'dpp' | 'tests' | 'profile';
 
+export type BookmarkItemType = 'note' | 'lecture';
+
+export interface Bookmark {
+  id: string;
+  userId: string;
+  itemType: BookmarkItemType;
+  itemId: string;
+  savedAt: string;
+  title: string;
+  subject: Subject;
+  chapter: string;
+  classLevel: ClassLevel;
+  description?: string;
+  fileName?: string;
+  fileSize?: string;
+  fileUrl?: string;
+  pageCount?: number;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  duration?: string;
+  lectureNumber?: string;
+  youtubeVideoUrl?: string;
+  youtubeVideoTitle?: string;
+}
+
 export type AdminTab =
   | 'dashboard'
   | 'students'
@@ -206,3 +231,4 @@ export type AdminTab =
   | 'notifications'
   | 'guide'
   | 'settings';
+

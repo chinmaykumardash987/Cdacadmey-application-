@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, BookOpen, Video, FileCheck, User } from 'lucide-react';
 import { ActiveTab } from '../../types';
+import { useData } from '../../context/DataContext';
 
 interface StudentBottomNavProps {
   activeTab: ActiveTab;
@@ -11,6 +12,7 @@ export const StudentBottomNav: React.FC<StudentBottomNavProps> = ({
   activeTab,
   onTabChange
 }) => {
+  const { savedCount } = useData();
   const navItems: { id: ActiveTab; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'dashboard', label: 'Home', icon: Home },
     { id: 'notes', label: 'Notes', icon: BookOpen },
@@ -35,8 +37,11 @@ export const StudentBottomNav: React.FC<StudentBottomNavProps> = ({
                   : 'text-slate-500 hover:text-slate-900 font-medium'
               }`}
             >
-              <div className={`p-1 rounded-lg transition ${isActive ? 'bg-red-50 text-red-600' : ''}`}>
+              <div className={`p-1 rounded-lg transition relative ${isActive ? 'bg-red-50 text-red-600' : ''}`}>
                 <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                {item.id === 'profile' && savedCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white" />
+                )}
               </div>
               <span className="text-[11px] mt-0.5 tracking-tight">{item.label}</span>
               {isActive && (

@@ -6,7 +6,9 @@ import {
   Batch,
   TestItem,
   TestResultItem,
-  NotificationItem
+  NotificationItem,
+  Bookmark,
+  BookmarkItemType
 } from '../types';
 import {
   INITIAL_NOTES,
@@ -26,6 +28,7 @@ const STUDENTS_KEY = 'cd_academy_students_v1';
 const BATCHES_KEY = 'cd_academy_batches_v1';
 const TESTS_KEY = 'cd_academy_tests_v1';
 const NOTIFICATIONS_KEY = 'cd_academy_notifications_v1';
+const BOOKMARKS_KEY = 'cd_academy_bookmarks_v1';
 const FIREBASE_CONFIG_KEY = 'cd_academy_firebase_config_v1';
 
 export interface FirebaseCustomConfig {
@@ -543,6 +546,91 @@ export const StorageService = {
     }
   },
 
+  // --- BOOKMARKS & SAVED MATERIALS ---
+  getBookmarks(userId?: string): Bookmark[] {
+    const key = userId ? `${BOOKMARKS_KEY}_${userId}` : BOOKMARKS_KEY;
+    try {
+      const data = localStorage.getItem(key);
+      if (data) return JSON.parse(data);
+      if (userId && key !== BOOKMARKS_KEY) {
+        const fallback = localStorage.getItem(BOOKMARKS_KEY);
+        if (fallback) return JSON.parse(fallback);
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
+  saveBookmarks(bookmarks: Bookmark[], userId?: string): void {
+    const key = userId ? `${BOOKMARKS_KEY}_${userId}` : BOOKMARKS_KEY;
+    localStorage.setItem(key, JSON.stringify(bookmarks));
+    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+    notifyChangeListeners();
+  },
+
+  isBookmarked(itemId: string, itemType?: BookmarkItemType, userId?: string): boolean {
+    const bookmarks = this.getBookmarks(userId);
+    return bookmarks.some(b => b.itemId === itemId && (!itemType || b.itemType === itemType));
+  },
+
+  async toggleBookmark(
+    item: Note | Lecture,
+    itemType: BookmarkItemType,
+    userId: string = 'std_student'
+  ): Promise<{ isBookmarked: boolean; bookmark?: Bookmark }> {
+    const current = this.getBookmarks(userId);
+    const existingIndex = current.findIndex(b => b.itemId === item.id && b.itemType === itemType);
+
+    if (existingIndex >= 0) {
+      const removedId = current[existingIndex].id;
+      const updated = current.filter((_, idx) => idx !== existingIndex);
+      this.saveBookmarks(updated, userId);
+      FirestoreDataService.removeBookmark(removedId, userId).catch(e => console.warn('Unbookmark Firestore sync note:', e));
+      return { isBookmarked: false };
+    } else {
+      const bookmarkId = `bm_${userId}_${itemType}_${item.id}`;
+      const isNote = itemType === 'note';
+      const noteItem = isNote ? (item as Note) : null;
+      const lectureItem = !isNote ? (item as Lecture) : null;
+
+      const newBookmark: Bookmark = {
+        id: bookmarkId,
+        userId,
+        itemType,
+        itemId: item.id,
+        savedAt: new Date().toISOString(),
+        title: item.title,
+        subject: item.subject,
+        chapter: item.chapter,
+        classLevel: item.classLevel,
+        description: item.description,
+        fileName: noteItem?.fileName,
+        fileSize: noteItem?.fileSize,
+        fileUrl: noteItem?.fileUrl,
+        pageCount: noteItem?.pageCount,
+        youtubeVideoUrl: noteItem?.youtubeVideoUrl,
+        youtubeVideoTitle: noteItem?.youtubeVideoTitle,
+        videoUrl: lectureItem?.videoUrl,
+        thumbnailUrl: lectureItem?.thumbnailUrl,
+        duration: lectureItem?.duration,
+        lectureNumber: lectureItem?.lectureNumber
+      };
+
+      const updated = [newBookmark, ...current];
+      this.saveBookmarks(updated, userId);
+      FirestoreDataService.addBookmark(newBookmark).catch(e => console.warn('Bookmark Firestore sync note:', e));
+      return { isBookmarked: true, bookmark: newBookmark };
+    }
+  },
+
+  async removeBookmark(bookmarkId: string, userId: string = 'std_student'): Promise<void> {
+    const current = this.getBookmarks(userId);
+    const updated = current.filter(b => b.id !== bookmarkId);
+    this.saveBookmarks(updated, userId);
+    FirestoreDataService.removeBookmark(bookmarkId, userId).catch(e => console.warn('Remove bookmark Firestore sync note:', e));
+  },
+
   resetToDefaultData(): void {
     localStorage.setItem(NOTES_KEY, JSON.stringify(INITIAL_NOTES));
     localStorage.setItem(LECTURES_KEY, JSON.stringify(INITIAL_LECTURES));
@@ -551,6 +639,7 @@ export const StorageService = {
     localStorage.setItem(BATCHES_KEY, JSON.stringify(INITIAL_BATCHES));
     localStorage.setItem(TESTS_KEY, JSON.stringify(INITIAL_TESTS));
     localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
+    localStorage.removeItem(BOOKMARKS_KEY);
     notifyChangeListeners();
   }
 };

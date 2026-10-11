@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, Play, Clock, BookOpen, ExternalLink, CheckCircle } from 'lucide-react';
+import { X, Play, Clock, BookOpen, ExternalLink, CheckCircle, Bookmark as BookmarkIcon } from 'lucide-react';
 import { Lecture } from '../../types';
+import { useData } from '../../context/DataContext';
 
 interface VideoModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({
   lecture,
   onOpenNotes
 }) => {
+  const { isBookmarked, toggleBookmark } = useData();
   if (!isOpen || !lecture) return null;
 
   // Extract YouTube ID if valid
@@ -57,13 +59,30 @@ export const VideoModal: React.FC<VideoModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => toggleBookmark(lecture, 'lecture')}
+              className={`p-1.5 rounded-lg transition flex items-center gap-1.5 text-xs font-bold ${
+                isBookmarked(lecture.id, 'lecture')
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700'
+              }`}
+              title={isBookmarked(lecture.id, 'lecture') ? "Saved in Profile (Click to Remove)" : "Save Video Lecture"}
+            >
+              <BookmarkIcon className={`w-3.5 h-3.5 ${isBookmarked(lecture.id, 'lecture') ? 'fill-white' : ''}`} />
+              <span className="hidden sm:inline">
+                {isBookmarked(lecture.id, 'lecture') ? 'Saved' : 'Save'}
+              </span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Video Player Container */}

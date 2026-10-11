@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { Lecture, Subject, ClassLevel } from '../../types';
-import { Video, Search, Play, Clock, Calendar, CheckCircle2, BookOpen } from 'lucide-react';
+import { Video, Search, Play, Clock, Calendar, CheckCircle2, BookOpen, Bookmark as BookmarkIcon, BookmarkCheck } from 'lucide-react';
 
 interface LecturesSectionProps {
   onOpenVideo: (lecture: Lecture) => void;
@@ -17,7 +17,7 @@ export const LecturesSection: React.FC<LecturesSectionProps> = ({
   onOpenNotes
 }) => {
   const { selectedClass, setSelectedClass } = useAuth();
-  const { lectures: allLectures } = useData();
+  const { lectures: allLectures, isBookmarked, toggleBookmark } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
   const [selectedChapter, setSelectedChapter] = useState<string>('All');
@@ -209,6 +209,23 @@ export const LecturesSection: React.FC<LecturesSectionProps> = ({
                     </span>
                   </div>
 
+                  {/* Bookmark button on thumbnail */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleBookmark(lecture, 'lecture');
+                    }}
+                    className={`absolute top-2 right-2 p-1.5 rounded-lg backdrop-blur-md transition z-10 ${
+                      isBookmarked(lecture.id, 'lecture')
+                        ? 'bg-amber-500 text-white shadow-md'
+                        : 'bg-black/60 text-white/90 hover:bg-black/80 hover:text-amber-400'
+                    }`}
+                    title={isBookmarked(lecture.id, 'lecture') ? "Remove from Saved" : "Save lecture to profile"}
+                  >
+                    <BookmarkIcon className={`w-3.5 h-3.5 ${isBookmarked(lecture.id, 'lecture') ? 'fill-white text-white' : ''}`} />
+                  </button>
+
                   <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     <span>{lecture.duration}</span>
@@ -217,9 +234,17 @@ export const LecturesSection: React.FC<LecturesSectionProps> = ({
 
                 {/* Content Details */}
                 <div className="p-4">
-                  <p className="text-[11px] font-semibold text-slate-500 mb-1">
-                    {lecture.classLevel} • {lecture.chapter}
-                  </p>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className="text-[11px] font-semibold text-slate-500 truncate">
+                      {lecture.classLevel} • {lecture.chapter}
+                    </p>
+                    {isBookmarked(lecture.id, 'lecture') && (
+                      <span className="shrink-0 text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                        <BookmarkCheck className="w-3 h-3 text-amber-600" />
+                        Saved
+                      </span>
+                    )}
+                  </div>
                   <h3 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-red-600 transition line-clamp-2 leading-snug">
                     {lecture.title}
                   </h3>
@@ -235,12 +260,29 @@ export const LecturesSection: React.FC<LecturesSectionProps> = ({
                   By {lecture.uploaderName || 'CD ACADEMY Faculty'}
                 </span>
 
-                <button
-                  type="button"
-                  className="font-bold text-red-600 group-hover:underline flex items-center gap-1 shrink-0"
-                >
-                  <span>Play Lecture</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleBookmark(lecture, 'lecture');
+                    }}
+                    className={`p-1.5 rounded-lg transition ${
+                      isBookmarked(lecture.id, 'lecture')
+                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                    }`}
+                    title={isBookmarked(lecture.id, 'lecture') ? "Saved in Profile (Click to Remove)" : "Save to Profile"}
+                  >
+                    <BookmarkIcon className={`w-3.5 h-3.5 ${isBookmarked(lecture.id, 'lecture') ? 'fill-amber-600 text-amber-600' : ''}`} />
+                  </button>
+                  <button
+                    type="button"
+                    className="font-bold text-red-600 group-hover:underline flex items-center gap-1 shrink-0"
+                  >
+                    <span>Play Lecture</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}

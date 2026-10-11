@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { X, Download, FileText, ZoomIn, ZoomOut, RotateCw, ExternalLink, CheckCircle, Youtube } from 'lucide-react';
+import { X, Download, FileText, ZoomIn, ZoomOut, RotateCw, ExternalLink, CheckCircle, Youtube, Bookmark as BookmarkIcon } from 'lucide-react';
+import { Note } from '../../types';
+import { useData } from '../../context/DataContext';
 
 interface PdfViewerModalProps {
   isOpen: boolean;
@@ -13,6 +15,7 @@ interface PdfViewerModalProps {
   fileSize?: string;
   youtubeVideoUrl?: string;
   onOpenVideo?: () => void;
+  note?: Note | null;
 }
 
 export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
@@ -26,8 +29,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   pageCount = 12,
   fileSize = '3.5 MB',
   youtubeVideoUrl,
-  onOpenVideo
+  onOpenVideo,
+  note
 }) => {
+  const { isBookmarked, toggleBookmark } = useData();
   const [zoomLevel, setZoomLevel] = useState(100);
   const [downloaded, setDownloaded] = useState(false);
 
@@ -75,6 +80,22 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               >
                 <Youtube className="w-4 h-4 text-white" />
                 <span className="hidden sm:inline">Watch Video</span>
+              </button>
+            )}
+            {note && (
+              <button
+                onClick={() => toggleBookmark(note, 'note')}
+                className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition ${
+                  isBookmarked(note.id, 'note')
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+                }`}
+                title={isBookmarked(note.id, 'note') ? "Saved in Profile (Click to Remove)" : "Save Note to Profile"}
+              >
+                <BookmarkIcon className={`w-3.5 h-3.5 ${isBookmarked(note.id, 'note') ? 'fill-white' : ''}`} />
+                <span className="hidden sm:inline">
+                  {isBookmarked(note.id, 'note') ? 'Saved' : 'Save'}
+                </span>
               </button>
             )}
             <button

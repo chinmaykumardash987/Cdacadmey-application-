@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { CdAcademyLogo } from './CdAcademyLogo';
-import { LogOut, User as UserIcon, Shield, Bell, Check, ChevronDown, Sparkles, Smartphone, Download, CheckCheck } from 'lucide-react';
+import { LogOut, User as UserIcon, Shield, Bell, Check, ChevronDown, Sparkles, Smartphone, Download, CheckCheck, Bookmark } from 'lucide-react';
 import { ClassLevel, ActiveTab, NotificationItem } from '../../types';
 import { ApkDownloadModal } from './ApkDownloadModal';
 import { StorageService } from '../../services/storage';
@@ -19,7 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdmin
 }) => {
   const { user, selectedClass, setSelectedClass, logout, isAdmin, requestNotificationPermission } = useAuth();
-  const { notifications, markAllNotificationsAsRead, markNotificationAsRead } = useData();
+  const { notifications, markAllNotificationsAsRead, markNotificationAsRead, savedCount } = useData();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showClassDropdown, setShowClassDropdown] = useState(false);
   const [showApkModal, setShowApkModal] = useState(false);
@@ -140,6 +140,27 @@ export const Header: React.FC<HeaderProps> = ({
               <Shield className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Admin Panel</span>
               <span className="sm:hidden text-[11px]">Admin</span>
+            </button>
+          )}
+
+          {/* Saved Materials Shortcut for Student */}
+          {!isAdmin && (
+            <button
+              onClick={() => onNavigateTab && onNavigateTab('profile')}
+              className={`p-2 rounded-full transition relative ${
+                activeTab === 'profile'
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'text-slate-600 hover:text-amber-600 hover:bg-amber-50'
+              }`}
+              title="Saved Materials (Bookmarks)"
+              aria-label="Saved Materials"
+            >
+              <Bookmark className={`w-5 h-5 ${savedCount > 0 ? 'text-amber-600 fill-amber-500/20' : ''}`} />
+              {savedCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-amber-600 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                  {savedCount > 9 ? '9+' : savedCount}
+                </span>
+              )}
             </button>
           )}
 

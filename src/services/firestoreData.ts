@@ -21,7 +21,9 @@ import {
   Batch,
   TestItem,
   TestResultItem,
-  NotificationItem
+  NotificationItem,
+  Bookmark,
+  BookmarkItemType
 } from '../types';
 import {
   INITIAL_NOTES,
@@ -42,7 +44,8 @@ const CACHE_KEYS = {
   BATCHES: 'cd_academy_fs_batches',
   TESTS: 'cd_academy_fs_tests',
   NOTIFICATIONS: 'cd_academy_fs_notifications',
-  RESULTS: 'cd_academy_fs_results'
+  RESULTS: 'cd_academy_fs_results',
+  BOOKMARKS: 'cd_academy_fs_bookmarks'
 };
 
 function getLocalCache<T>(key: string, defaultValue: T): T {
@@ -805,6 +808,90 @@ export const FirestoreDataService = {
     } catch (err) {
       console.warn('FCM token registration warning:', err);
     }
+  },
+
+  // --- Student Bookmarks Management ---
+  async getUserBookmarks(userId: string): Promise<Bookmark[]> {
+    const cacheKey = `${CACHE_KEYS.BOOKMARKS}_${userId}`;
+    try {
+      const q = query(collection(db, 'bookmarks'), where('userId', '==', userId));
+      const snap = await getDocs(q);
+      const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as Bookmark));
+      list.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+      setLocalCache(cacheKey, list);
+      return list;
+    } catch (e) {
+      console.warn('getUserBookmarks from Firestore fallback:', e);
+      return getLocalCache<Bookmark[]>(cacheKey, []);
+    }
+  },
+
+  subscribeUserBookmarks(userId: string, callback: (bookmarks: Bookmark[]) => void): () => void {
+    const cacheKey = `${CACHE_KEYS.BOOKMARKS}_${userId}`;
+    try {
+      const q = query(collection(db, 'bookmarks'), where('userId', '==', userId));
+      return onSnapshot(
+        q,
+        (snap) => {
+          const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as Bookmark));
+          list.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+          setLocalCache(cacheKey, list);
+          callback(list);
+        },
+        (err) => {
+          console.warn('subscribeUserBookmarks error, using cache:', err);
+          callback(getLocalCache<Bookmark[]>(cacheKey, []));
+        }
+      );
+    } catch (e) {
+      console.warn('subscribeUserBookmarks fallback:', e);
+      callback(getLocalCache<Bookmark[]>(cacheKey, []));
+      return () => {};
+    }
+  },
+
+  async addBookmark(bookmark: Bookmark): Promise<Bookmark> {
+    const cacheKey = `${CACHE_KEYS.BOOKMARKS}_${bookmark.userId}`;
+    const id = bookmark.id || `bm_${bookmark.userId}_${bookmark.itemType}_${bookmark.itemId}`;
+    const docData: Bookmark = {
+      ...bookmark,
+      id,
+      savedAt: bookmark.savedAt || new Date().toISOString()
+    };
+    try {
+      await setDoc(doc(db, 'bookmarks', id), docData);
+    } catch (e) {
+      console.warn('addBookmark to Firestore fallback:', e);
+    }
+    const current = getLocalCache<Bookmark[]>(cacheKey, []);
+    const updated = [docData, ...current.filter(b => b.id !== id && !(b.itemId === bookmark.itemId && b.itemType === bookmark.itemType))];
+    setLocalCache(cacheKey, updated);
+    return docData;
+  },
+
+  async removeBookmark(bookmarkId: string, userId: string): Promise<void> {
+    const cacheKey = `${CACHE_KEYS.BOOKMARKS}_${userId}`;
+    try {
+      await deleteDoc(doc(db, 'bookmarks', bookmarkId));
+    } catch (e) {
+      console.warn('removeBookmark from Firestore fallback:', e);
+    }
+    const current = getLocalCache<Bookmark[]>(cacheKey, []);
+    const updated = current.filter(b => b.id !== bookmarkId);
+    setLocalCache(cacheKey, updated);
+  },
+
+  async removeBookmarkByItem(userId: string, itemType: BookmarkItemType, itemId: string): Promise<void> {
+    const cacheKey = `${CACHE_KEYS.BOOKMARKS}_${userId}`;
+    const bookmarkId = `bm_${userId}_${itemType}_${itemId}`;
+    try {
+      await deleteDoc(doc(db, 'bookmarks', bookmarkId));
+    } catch (e) {
+      console.warn('removeBookmarkByItem fallback:', e);
+    }
+    const current = getLocalCache<Bookmark[]>(cacheKey, []);
+    const updated = current.filter(b => !(b.itemId === itemId && b.itemType === itemType) && b.id !== bookmarkId);
+    setLocalCache(cacheKey, updated);
   },
 
   // Seed all initial content if Firestore database is fresh

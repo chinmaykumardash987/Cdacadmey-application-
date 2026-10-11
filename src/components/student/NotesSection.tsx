@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { StorageService } from '../../services/storage';
 import { Note, Subject, ClassLevel } from '../../types';
-import { Search, Filter, BookOpen, Download, Eye, FileText, Calendar, Tag, ChevronRight, Youtube, Play } from 'lucide-react';
+import { Search, Filter, BookOpen, Download, Eye, FileText, Calendar, Tag, ChevronRight, Youtube, Play, Bookmark as BookmarkIcon, BookmarkCheck } from 'lucide-react';
 import { getYouTubeThumbnail } from '../../utils/youtube';
 
 interface NotesSectionProps {
@@ -15,7 +15,7 @@ const ALL_SUBJECTS: Subject[] = ['Physics', 'Chemistry', 'Mathematics', 'Biology
 
 export const NotesSection: React.FC<NotesSectionProps> = ({ onOpenPdf, onOpenVideo }) => {
   const { selectedClass, setSelectedClass } = useAuth();
-  const { notes: allNotes } = useData();
+  const { notes: allNotes, isBookmarked, toggleBookmark } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
   const [selectedChapter, setSelectedChapter] = useState<string>('All');
@@ -205,12 +205,35 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ onOpenPdf, onOpenVid
                     <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
                       {note.classLevel}
                     </span>
+                    {isBookmarked(note.id, 'note') && (
+                      <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                        <BookmarkCheck className="w-3 h-3 text-amber-600" />
+                        Saved
+                      </span>
+                    )}
                   </div>
 
-                  <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1 shrink-0">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(note.createdAt).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(note.createdAt).toLocaleDateString()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleBookmark(note, 'note');
+                      }}
+                      className={`p-1.5 rounded-lg transition ${
+                        isBookmarked(note.id, 'note')
+                          ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                          : 'text-slate-400 hover:text-amber-600 hover:bg-slate-100'
+                      }`}
+                      title={isBookmarked(note.id, 'note') ? "Remove from Saved" : "Save note to profile"}
+                    >
+                      <BookmarkIcon className={`w-3.5 h-3.5 ${isBookmarked(note.id, 'note') ? 'fill-amber-600 text-amber-600' : ''}`} />
+                    </button>
+                  </div>
                 </div>
 
                 <h3 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-red-600 transition leading-snug">
@@ -246,6 +269,21 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ onOpenPdf, onOpenVid
                 </span>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleBookmark(note, 'note');
+                    }}
+                    className={`p-1.5 rounded-lg transition ${
+                      isBookmarked(note.id, 'note')
+                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                    title={isBookmarked(note.id, 'note') ? "Saved in Profile (Click to Remove)" : "Save Note to Profile"}
+                  >
+                    <BookmarkIcon className={`w-4 h-4 ${isBookmarked(note.id, 'note') ? 'fill-amber-600 text-amber-600' : ''}`} />
+                  </button>
                   {note.youtubeVideoUrl && onOpenVideo && (
                     <button
                       type="button"

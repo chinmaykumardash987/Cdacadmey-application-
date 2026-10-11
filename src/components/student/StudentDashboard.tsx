@@ -50,7 +50,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onOpenVideo
 }) => {
   const { user, selectedClass, setSelectedClass, requestNotificationPermission } = useAuth();
-  const { notes: allNotes, lectures: allLectures, dpps: allDPPs, notifications, isRealtimeActive, isOnline } = useData();
+  const { notes: allNotes, lectures: allLectures, dpps: allDPPs, notifications, isRealtimeActive, isOnline, savedCount } = useData();
   const [viewMode, setViewMode] = useState<'icon' | 'card'>('icon');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [showApkModal, setShowApkModal] = useState(false);
@@ -132,6 +132,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       bgColor: 'bg-red-50 text-red-600 border-red-100',
       badge: 'HD Video',
       badgeColor: 'bg-red-600 text-white'
+    },
+    {
+      id: 'profile' as ActiveTab,
+      label: 'Saved Materials',
+      sublabel: 'Your Bookmarks',
+      icon: Bookmark,
+      iconColor: 'text-amber-600',
+      bgColor: 'bg-amber-50 text-amber-600 border-amber-100',
+      badge: savedCount > 0 ? `${savedCount} Saved` : 'Saved',
+      badgeColor: savedCount > 0 ? 'bg-amber-600 text-white' : 'bg-slate-400 text-white'
     },
     {
       id: 'profile' as ActiveTab,

@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { StorageService } from '../services/storage';
 import { FirestoreDataService } from '../services/firestoreData';
+import { useAuth } from './AuthContext';
 import {
   Note,
   Lecture,
@@ -9,7 +10,9 @@ import {
   TestItem,
   TestResultItem,
   NotificationItem,
-  User
+  User,
+  Bookmark,
+  BookmarkItemType
 } from '../types';
 
 interface DataContextType {
@@ -20,6 +23,13 @@ interface DataContextType {
   tests: TestItem[];
   notifications: NotificationItem[];
   students: User[];
+  bookmarks: Bookmark[];
+  savedNotes: Note[];
+  savedLectures: Lecture[];
+  savedCount: number;
+  isBookmarked: (itemId: string, itemType?: BookmarkItemType) => boolean;
+  toggleBookmark: (item: Note | Lecture, itemType: BookmarkItemType) => Promise<boolean>;
+  removeBookmark: (bookmarkId: string) => Promise<void>;
   isRealtimeActive: boolean;
   isOnline: boolean;
   lastSyncTime: Date | null;
@@ -56,6 +66,9 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id || 'std_student';
+
   const [notes, setNotes] = useState<Note[]>(() => StorageService.getNotes());
   const [lectures, setLectures] = useState<Lecture[]>(() => StorageService.getLectures());
   const [dpps, setDPPs] = useState<DPP[]>(() => StorageService.getDPPs());
@@ -63,6 +76,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tests, setTests] = useState<TestItem[]>(() => StorageService.getTests());
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => StorageService.getNotifications());
   const [students, setStudents] = useState<User[]>(() => StorageService.getStudents());
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>(() => StorageService.getBookmarks(currentUserId));
   const [isRealtimeActive, setIsRealtimeActive] = useState<boolean>(true);
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(new Date());
@@ -75,8 +89,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTests(StorageService.getTests());
     setNotifications(StorageService.getNotifications());
     setStudents(StorageService.getStudents());
+    setBookmarks(StorageService.getBookmarks(currentUserId));
     setLastSyncTime(new Date());
-  }, []);
+  }, [currentUserId]);
+
+  // Load and subscribe bookmarks when user changes
+  useEffect(() => {
+    const loaded = StorageService.getBookmarks(currentUserId);
+    setBookmarks(loaded);
+
+    // Subscribe to Firestore bookmarks for this student
+    const unsubBookmarks = FirestoreDataService.subscribeUserBookmarks(currentUserId, (bms) => {
+      setBookmarks(bms);
+      StorageService.saveBookmarks(bms, currentUserId);
+    });
+
+    return () => unsubBookmarks();
+  }, [currentUserId]);
 
   // Set up realtime Firestore sync and change listeners
   useEffect(() => {
@@ -111,6 +140,73 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.removeEventListener('offline', handleOffline);
     };
   }, [syncStateFromStorage]);
+
+  // Bookmarks helper functions
+  const isBookmarked = useCallback((itemId: string, itemType?: BookmarkItemType) => {
+    return bookmarks.some(b => b.itemId === itemId && (!itemType || b.itemType === itemType));
+  }, [bookmarks]);
+
+  const toggleBookmark = useCallback(async (item: Note | Lecture, itemType: BookmarkItemType): Promise<boolean> => {
+    const res = await StorageService.toggleBookmark(item, itemType, currentUserId);
+    const updated = StorageService.getBookmarks(currentUserId);
+    setBookmarks(updated);
+    return res.isBookmarked;
+  }, [currentUserId]);
+
+  const removeBookmark = useCallback(async (bookmarkId: string): Promise<void> => {
+    await StorageService.removeBookmark(bookmarkId, currentUserId);
+    const updated = StorageService.getBookmarks(currentUserId);
+    setBookmarks(updated);
+  }, [currentUserId]);
+
+  // Saved Notes and Lectures mapped to live materials
+  const savedNotes = useMemo(() => {
+    const noteBookmarks = bookmarks.filter(b => b.itemType === 'note');
+    return noteBookmarks.map(b => {
+      const live = notes.find(n => n.id === b.itemId);
+      if (live) return live;
+      return {
+        id: b.itemId,
+        title: b.title,
+        classLevel: b.classLevel,
+        subject: b.subject,
+        chapter: b.chapter,
+        description: b.description || '',
+        fileUrl: b.fileUrl || '',
+        fileName: b.fileName || `${b.title}.pdf`,
+        fileSize: b.fileSize || '2.5 MB',
+        pageCount: b.pageCount || 10,
+        uploaderId: 'cd-faculty',
+        createdAt: b.savedAt,
+        youtubeVideoUrl: b.youtubeVideoUrl,
+        youtubeVideoTitle: b.youtubeVideoTitle
+      } as Note;
+    });
+  }, [bookmarks, notes]);
+
+  const savedLectures = useMemo(() => {
+    const lectureBookmarks = bookmarks.filter(b => b.itemType === 'lecture');
+    return lectureBookmarks.map(b => {
+      const live = lectures.find(l => l.id === b.itemId);
+      if (live) return live;
+      return {
+        id: b.itemId,
+        title: b.title,
+        classLevel: b.classLevel,
+        subject: b.subject,
+        chapter: b.chapter,
+        lectureNumber: b.lectureNumber || '01',
+        description: b.description || '',
+        videoUrl: b.videoUrl || '',
+        thumbnailUrl: b.thumbnailUrl || '',
+        duration: b.duration || '45 mins',
+        uploaderId: 'cd-faculty',
+        createdAt: b.savedAt
+      } as Lecture;
+    });
+  }, [bookmarks, lectures]);
+
+  const savedCount = bookmarks.length;
 
   // Operations
   const addNote = async (noteData: Omit<Note, 'id' | 'createdAt'>): Promise<Note> => {
@@ -184,8 +280,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const submitTestResult = async (resultData: Omit<TestResultItem, 'resultId' | 'submittedAt'>): Promise<TestResultItem> => {
-    const created = await FirestoreDataService.submitTestResult(resultData);
-    return created;
+    const res = await FirestoreDataService.submitTestResult(resultData);
+    syncStateFromStorage();
+    return res;
   };
 
   const triggerNotification = async (data: {
@@ -198,9 +295,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     actionTab?: any;
     imageURL?: string;
   }): Promise<NotificationItem> => {
-    const created = StorageService.addNotification(data);
+    const notif = await FirestoreDataService.triggerNotification(data);
     syncStateFromStorage();
-    return created;
+    return notif;
   };
 
   const markNotificationAsRead = async (notificationId: string, userId: string): Promise<void> => {
@@ -228,6 +325,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         tests,
         notifications,
         students,
+        bookmarks,
+        savedNotes,
+        savedLectures,
+        savedCount,
+        isBookmarked,
+        toggleBookmark,
+        removeBookmark,
         isRealtimeActive,
         isOnline,
         lastSyncTime,

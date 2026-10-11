@@ -125,7 +125,11 @@ function MainAppContent() {
         )}
 
         {activeTab === 'profile' && (
-          <StudentProfile />
+          <StudentProfile
+            onOpenPdf={setActivePdfNote}
+            onOpenVideo={setActiveVideoLecture}
+            onNavigateTab={setActiveTab}
+          />
         )}
       </main>
 
@@ -148,6 +152,7 @@ function MainAppContent() {
           pageCount={activePdfNote.pageCount}
           fileSize={activePdfNote.fileSize}
           youtubeVideoUrl={activePdfNote.youtubeVideoUrl}
+          note={activePdfNote}
           onOpenVideo={() => {
             setActiveVideoLecture({
               id: `note-video-${activePdfNote.id}`,
